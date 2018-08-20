@@ -321,6 +321,11 @@ CloudFormation do
       LoadBalancers service_loadbalancer
     end
 
+    if defined? graceperiod
+      Property('HealthCheckGracePeriodSeconds', graceperiod)
+    end
+
+
     if awsvpc_enabled == true
       NetworkConfiguration({
         AwsvpcConfiguration: {
