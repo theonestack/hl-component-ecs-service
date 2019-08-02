@@ -197,7 +197,7 @@ CloudFormation do
     IAM_Role('ExecutionRole') do
       AssumeRolePolicyDocument service_role_assume_policy('ecs-tasks')
       Path '/'
-      ManagedPolicyArns ["arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"]
+      ManagedPolicyArns ["arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy", "arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess"]
     end
   end
 
