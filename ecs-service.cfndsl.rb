@@ -67,6 +67,14 @@ CloudFormation do
 
     task_def.merge!({Environment: env_vars }) if env_vars.any?
 
+    if !(task['secrets'].nil?)
+      secrets = []
+      task['secrets'].each do |name,value|
+        secrets << { Name: name, ValueFrom: value }
+      end
+      task_def.merge!({Secrets: secrets }) if secrets.any?
+    end
+
     # add links
     if task.key?('links')
       task['links'].each do |links|
