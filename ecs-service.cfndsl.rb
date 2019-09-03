@@ -69,9 +69,11 @@ CloudFormation do
 
     # add links
     if task.key?('links')
-      task['links'].each do |links|
-      task_def.merge!({ Links: [ links ] })
+      links = []
+      task['links'].each do |link|
+        links.append(link)
       end
+      task_def.merge!({ Links: links })
     end
 
     # add entrypoint
