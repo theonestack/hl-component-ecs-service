@@ -71,7 +71,7 @@ CloudFormation do
     if task.key?('links')
       links = []
       task['links'].each do |link|
-        links.insert(link)
+        links.push(link)
       end
       task_def.merge!({ Links: links })
     end
