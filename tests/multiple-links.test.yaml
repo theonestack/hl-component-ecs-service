@@ -23,10 +23,14 @@ task_definition:
     image: php-fpm
     ports:
       - 9000
+      - 9001
     links:
       - db:db
       - redis:redis
       - nginx:nginx
+    volumes_from:
+      - db
+      - redis
 
 targetgroup:
   name: nginx
