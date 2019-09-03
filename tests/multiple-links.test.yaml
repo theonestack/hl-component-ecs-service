@@ -1,0 +1,39 @@
+test_metadata:
+  type: config
+  name: nginx
+  description: create a nginx ecs service with a targetgroup
+
+task_definition: 
+
+  nginx:
+    repo: nginx
+    image: nginx
+
+  db:
+    image: postgres
+    ports:
+      - 5432
+
+  redis:
+    image: redis
+    ports:
+      - 6379
+
+  php-fpm:
+    image: php-fpm
+    ports:
+      - 9000
+    links:
+      - db:db
+      - redis:redis
+      - nginx:nginx
+
+targetgroup:
+  name: nginx
+  container: nginx
+  port: 80
+  protocol: http
+  listener: http
+  healthcheck:
+    path: /
+    code: 200
