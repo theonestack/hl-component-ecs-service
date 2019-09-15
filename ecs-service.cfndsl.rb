@@ -119,12 +119,24 @@ CloudFormation do
       task_def.merge!({PortMappings: port_mappings})
     end
 
+    # add DependsOn
+    # The dependencies defined for container startup and shutdown. A container can contain multiple dependencies. When a dependency is defined for container startup, for container shutdown it is reversed.
+    # For tasks using the EC2 launch type, the container instances require at least version 1.3.0 of the container agent to enable container dependencies
+    depends_on = []
+    if !(task['depends_on'].nil?)
+      task['depends_on'].each do |name,value|
+        depends_on << { ContainerName: name, Condition: value}
+      end
+    end
+
     task_def.merge!({EntryPoint: task['entrypoint'] }) if task.key?('entrypoint')
     task_def.merge!({Command: task['command'] }) if task.key?('command')
     task_def.merge!({HealthCheck: task['healthcheck'] }) if task.key?('healthcheck')
     task_def.merge!({WorkingDirectory: task['working_dir'] }) if task.key?('working_dir')
     task_def.merge!({Privileged: task['privileged'] }) if task.key?('privileged')
     task_def.merge!({User: task['user'] }) if task.key?('user')
+    task_def.merge!({DependsOn: depends_on }) if depends_on.length > 0
+
 
     definitions << task_def
 

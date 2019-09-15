@@ -1,0 +1,27 @@
+test_metadata:
+  type: config
+  name: nginx
+  description: create a nginx ecs service with a targetgroup
+
+task_definition: 
+
+  nginx:
+    repo: nginx
+    image: nginx
+    depends_on:
+      db: START 
+  db:
+    image: postgres
+    not_essential: true
+    ports:
+      - 5432
+
+targetgroup:
+  name: nginx
+  container: nginx
+  port: 80
+  protocol: http
+  listener: http
+  healthcheck:
+    path: /
+    code: 200
