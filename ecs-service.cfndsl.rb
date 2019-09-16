@@ -6,6 +6,11 @@ CloudFormation do
     Condition('IsFargate', FnEquals(Ref('EnableFargate'), 'true'))
   end
 
+  tags = []
+  tags << { Key: "Name", Value: component_name }
+  tags << { Key: "Environment", Value: Ref("EnvironmentName") }
+  tags << { Key: "EnvironmentType", Value: Ref("EnvironmentType") }
+
   Condition('IsScalingEnabled', FnEquals(Ref('EnableScaling'), 'true'))
   
 
@@ -16,7 +21,7 @@ CloudFormation do
     Property('RetentionInDays', "#{log_retention}")
   }
 
-  definitions, task_volumes = Array.new(2){[]}
+  definitions, task_volumes, secrets = Array.new(3){[]}
 
   task_definition.each do |task_name, task|
 
@@ -126,6 +131,22 @@ CloudFormation do
     task_def.merge!({Privileged: task['privileged'] }) if task.key?('privileged')
     task_def.merge!({User: task['user'] }) if task.key?('user')
 
+    if task.key?('secrets')
+      
+      if task['secrets'].key?('ssm')
+        secrets.push *task['secrets']['ssm'].map {|k,v| { Name: k, ValueFrom: v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter#{v}") : v }}
+      end
+      
+      if task['secrets'].key?('secretsmanager')
+        secrets.push *task['secrets']['secretsmanager'].map {|k,v| { Name: k, ValueFrom: v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:#{v}") : v }}
+      end
+      
+      if secrets.any?
+        task_def.merge!({Secrets: secrets})
+      end
+      
+    end
+
     definitions << task_def
 
   end if defined? task_definition
@@ -170,58 +191,58 @@ CloudFormation do
     end
 
     IAM_Role('TaskRole') do
-      AssumeRolePolicyDocument ({
-        Statement: [
-          {
-            Effect: 'Allow',
-            Principal: { Service: [ 'ecs-tasks.amazonaws.com' ] },
-            Action: [ 'sts:AssumeRole' ]
-          },
-          {
-            Effect: 'Allow',
-            Principal: { Service: [ 'ssm.amazonaws.com' ] },
-            Action: [ 'sts:AssumeRole' ]
-          }
-        ]
-      })
+      AssumeRolePolicyDocument service_role_assume_policy(['ecs-tasks','ssm'])
       Path '/'
       Policies(policies)
     end
 
     IAM_Role('ExecutionRole') do
-      AssumeRolePolicyDocument service_role_assume_policy('ecs-tasks')
+      AssumeRolePolicyDocument service_role_assume_policy(['ecs-tasks','ssm'])
       Path '/'
       ManagedPolicyArns ["arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"]
+
+      if secrets.any?
+        actions = %w(
+          ssm:GetParameters
+          secretsmanager:GetSecretValue
+        )
+        resources = secrets.collect {|s| s[:ValueFrom] }
+        Policies [iam_policy_allow('ssm-secrets',actions,resources)]
+      end
+
     end
   end
 
-  Resource('Task') do
-    Type 'AWS::ECS::TaskDefinition'
-    Property('ContainerDefinitions', definitions)
+  ECS_TaskDefinition('Task') do
+    ContainerDefinitions definitions
 
     if defined?(cpu)
-      Property('Cpu', cpu)
+      Cpu cpu
     end
 
     if defined?(memory)
-      Property('Memory', memory)
+      Memory memory
     end
 
     if defined?(network_mode)
-      Property('NetworkMode', network_mode)
+      NetworkMode network_mode
     end
 
     if task_volumes.any?
-      Property('Volumes', task_volumes)
+      Volumes task_volumes
     end
 
     if defined?(iam_policies)
-      Property('TaskRoleArn', Ref('TaskRole'))
-      Property('ExecutionRoleArn', Ref('ExecutionRole'))
+      TaskRoleArn Ref('TaskRole')
+      ExecutionRoleArn Ref('ExecutionRole')
     end
+
     if awsvpc_enabled
         Property('RequiresCompatibilities', FnIf('IsFargate', ['FARGATE'], ['EC2']))
     end
+
+    Tags tags
+
   end if defined? task_definition
 
   service_loadbalancer = []
@@ -235,12 +256,10 @@ CloudFormation do
         attributes << { Key: key, Value: value }
       end if targetgroup.has_key?('attributes')
 
-      tags = []
-      tags << { Key: "Environment", Value: Ref("EnvironmentName") }
-      tags << { Key: "EnvironmentType", Value: Ref("EnvironmentType") }
+      tg_tags = tags.map(&:clone)
 
       targetgroup['tags'].each do |key,value|
-        tags << { Key: key, Value: value }
+        tg_tags << { Key: key, Value: value }
       end if targetgroup.has_key?('tags')
 
       ElasticLoadBalancingV2_TargetGroup('TaskTargetGroup') do
@@ -263,7 +282,7 @@ CloudFormation do
         TargetType targetgroup['type'] if targetgroup.has_key?('type')
         TargetGroupAttributes attributes if attributes.any?
 
-        Tags tags if tags.any?
+        Tags tg_tags
       end
 
       targetgroup['rules'].each_with_index do |rule, index|
@@ -404,6 +423,8 @@ CloudFormation do
     unless registry.empty?
       ServiceRegistries([registry])
     end
+
+    Tags tags if tags.any?
 
   end if defined? task_definition
 
