@@ -177,6 +177,16 @@ CloudFormation do
     end
   end
 
+  # add task placement constraints 
+  task_constraints =[];  
+  if defined?(task_placement_constraints)
+    task_placement_constraints.each do |cntr|
+      object = {Type: "memberOf"} 
+      object.merge!({ Expression: FnSub(cntr)})
+      task_constraints << object
+    end
+  end
+
   if defined?(iam_policies)
 
     policies = []
@@ -247,6 +257,10 @@ CloudFormation do
     if defined?(iam_policies)
       TaskRoleArn Ref('TaskRole')
       ExecutionRoleArn Ref('ExecutionRole')
+    end
+
+    if task_constraints.any?
+      PlacementConstraints task_constraints 
     end
 
     if awsvpc_enabled

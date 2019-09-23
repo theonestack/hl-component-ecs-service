@@ -13,6 +13,9 @@ log_retention: 7
 #
 # volumes:
 #   - data-volume:/data
+# NOTE: task placement constraint only suport Type="memberOf"
+# task_placement_constraints:
+#   - "attribute:ecs.availability-zone==ap-southeast-2a"     
 #
 # task_definition:
 #   data:
