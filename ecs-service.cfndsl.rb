@@ -239,11 +239,11 @@ CloudFormation do
     ContainerDefinitions definitions
 
     if defined?(cpu)
-      Cpu cpu
+      Property('Cpu', cpu)
     end
 
     if defined?(memory)
-      Memory memory
+      Property('Memory', memory)
     end
 
     if defined?(network_mode)
