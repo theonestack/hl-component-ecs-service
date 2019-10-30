@@ -238,12 +238,16 @@ CloudFormation do
   ECS_TaskDefinition('Task') do
     ContainerDefinitions definitions
 
-    if (defined? (cpu) && !(cpu.empty?))
-      Cpu cpu
+    if defined?(cpu)
+      unless cpu.empty?
+       Cpu cpu
+      end
     end
 
-    if (defined? (memory) && !(cpu.memory?))
-      Memory memory
+    if defined?(memory)
+      unless memory.empty?
+        Memory memory
+      end
     end
 
     if defined?(network_mode)
