@@ -238,12 +238,12 @@ CloudFormation do
   ECS_TaskDefinition('Task') do
     ContainerDefinitions definitions
 
-    if defined?(cpu)
-      Property('Cpu', cpu)
+    if defined?(cpu) && !cpu.empty?
+      Cpu cpu
     end
 
-    if defined?(memory)
-      Property('Memory', memory)
+    if defined?(memory) && !cpu.memory?
+      Memory memory
     end
 
     if defined?(network_mode)
