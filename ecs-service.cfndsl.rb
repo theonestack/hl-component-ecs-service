@@ -239,15 +239,11 @@ CloudFormation do
     ContainerDefinitions definitions
 
     if defined?(cpu)
-      unless cpu.to_s.strip.empty?
-       Cpu cpu
-      end
+      Cpu cpu
     end
 
     if defined?(memory)
-      unless memory.to_s.strip.empty?
-        Memory memory
-      end
+      Memory memory
     end
 
     if defined?(network_mode)
