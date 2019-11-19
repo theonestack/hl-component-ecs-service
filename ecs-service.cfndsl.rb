@@ -1,5 +1,7 @@
 CloudFormation do
 
+  export = defined?(export_name) ? export_name : component_name
+
   awsvpc_enabled = false
   if defined?(network_mode) && network_mode == 'awsvpc'
     awsvpc_enabled = true
@@ -554,5 +556,10 @@ CloudFormation do
     }
 
   end
+
+  Output("ServiceName") {
+    Value(FnGetAtt(:Service, :Name))
+    Export FnSub("${EnvironmentName}-#{export}-ServiceName")
+  }
 
 end
