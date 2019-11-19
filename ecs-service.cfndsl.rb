@@ -456,11 +456,6 @@ CloudFormation do
 
   end if defined? task_definition
 
-  Output("ServiceName") {
-    Value(FnGetAtt(:Service, :Name))
-    Export FnSub("${EnvironmentName}-#{export}-ServiceName")
-  }
-
   if defined?(scaling_policy)
 
     IAM_Role(:ServiceECSAutoScaleRole) {
@@ -561,5 +556,10 @@ CloudFormation do
     }
 
   end
+
+  Output("ServiceName") {
+    Value(FnGetAtt(:Service, :Name))
+    Export FnSub("${EnvironmentName}-#{export}-ServiceName")
+  }
 
 end
