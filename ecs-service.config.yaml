@@ -13,6 +13,9 @@ log_retention: 7
 #
 # volumes:
 #   - data-volume:/data
+# NOTE: task placement constraint only suport Type="memberOf"
+# task_placement_constraints:
+#   - "attribute:ecs.availability-zone==ap-southeast-2a"     
 #
 # task_definition:
 #   data:
@@ -40,7 +43,8 @@ log_retention: 7
 #     command: ['npm','start']
 #     mounts:
 #       - data-volume:/data:ro
-#
+#     depends_on: #compatibility notice https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions.html#cfn-ecs-taskdefinition-containerdefinition-dependson
+#       data: START #  available status   COMPLETE | HEALTHY | START | SUCCESS
 # targetgroup:
 #   name: api
 #   container: api
