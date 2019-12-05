@@ -557,9 +557,9 @@ CloudFormation do
 
   end
 
-  Output("ServiceName") {
+  Output("ServiceName") do
     Value(FnGetAtt(:Service, :Name))
     Export FnSub("${EnvironmentName}-#{export}-ServiceName")
-  }
+  end if defined? task_definition
 
 end
