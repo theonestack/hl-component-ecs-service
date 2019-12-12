@@ -23,7 +23,7 @@ CloudFormation do
     Property('RetentionInDays', "#{log_retention}")
   }
 
-  definitions, task_volumes, secrets = Array.new(3){[]}
+  definitions, task_volumes, secrets, secrets_policy = Array.new(4){[]}
 
   task_definition.each do |task_name, task|
 
@@ -149,10 +149,14 @@ CloudFormation do
       
       if task['secrets'].key?('ssm')
         secrets.push *task['secrets']['ssm'].map {|k,v| { Name: k, ValueFrom: v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter#{v}") : v }}
+        resources = task['secrets']['ssm'].map {|k,v| v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter#{v}") : v }
+        secrets_policy.push iam_policy_allow('ssm-secrets','ssm:GetParameters', resources)
       end
       
       if task['secrets'].key?('secretsmanager')
         secrets.push *task['secrets']['secretsmanager'].map {|k,v| { Name: k, ValueFrom: v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:#{v}") : v }}
+        resources = task['secrets']['secretsmanager'].map {|k,v| v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:#{v}-*") : v }
+        secrets_policy.push iam_policy_allow('secretsmanager','secretsmanager:GetSecretValue', resources)
       end
       
       if secrets.any?
@@ -225,13 +229,8 @@ CloudFormation do
       Path '/'
       ManagedPolicyArns ["arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"]
 
-      if secrets.any?
-        actions = %w(
-          ssm:GetParameters
-          secretsmanager:GetSecretValue
-        )
-        resources = secrets.collect {|s| s[:ValueFrom] }
-        Policies [iam_policy_allow('ssm-secrets',actions,resources)]
+      if secrets_policy.any?
+        Policies secrets_policy
       end
 
     end
