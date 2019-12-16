@@ -1,6 +1,12 @@
 CfhighlanderTemplate do
 
-  DependsOn 'vpc' if ((defined? network_mode) && (network_mode == "awsvpc"))
+  if ((defined? network_mode) && (network_mode == "awsvpc"))
+    if ((defined? securityGroups) && (securityGroups.has_key?(component_name)))
+      DependsOn 'vpc'
+    elsif ((defined? security_group_rules) && security_group_rules.any?)
+      DependsOn 'lib-ec2'
+    end
+  end
 
   Description "ecs-service - #{component_name} - #{component_version}"
 

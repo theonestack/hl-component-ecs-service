@@ -364,19 +364,22 @@ CloudFormation do
     end
   end
 
-  has_security_group = false
-  if ((defined? securityGroups) && (securityGroups.has_key?(component_name)))
-    has_security_group = true
-  end
-
   if awsvpc_enabled == true
     sg_name = 'SecurityGroupBackplane'
-    if has_security_group == true
+    if ((defined? securityGroups) && (securityGroups.has_key?(component_name)))
       EC2_SecurityGroup('ServiceSecurityGroup') do
         VpcId Ref('VPCId')
         GroupDescription "#{component_name} ECS service"
         SecurityGroupIngress sg_create_rules(securityGroups[component_name], ip_blocks)
       end
+      sg_name = 'ServiceSecurityGroup'
+    elsif ((defined? security_group_rules) && security_group_rules.any?)
+      EC2_SecurityGroup(:ServiceSecurityGroup) {
+        VpcId Ref(:VPCId)
+        GroupDescription "#{component_name} ECS service"
+        SecurityGroupIngress generate_security_group_rules(security_group_rules,ip_blocks)
+        Tags tags
+      }
       sg_name = 'ServiceSecurityGroup'
     end
   end
