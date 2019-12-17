@@ -1,0 +1,39 @@
+test_metadata:
+  type: config
+  name: multiple scaling policies
+  description: create an ECS service with multiple scaling policies
+
+task_definition:
+  nginx:
+    repo: nginx
+    image: nginx
+
+targetgroup:
+  name: nginx
+  container: nginx
+  port: 80
+  protocol: http
+  listener: http
+  healthcheck:
+    path: /
+    code: 200
+
+scaling_policy:
+  min: 2
+  max: 4
+  up:
+    - 
+      cooldown: 150
+      threshold: 90
+      evaluation_periods: 5
+      adjustment: 2
+    - 
+      cooldown: 150
+      threshold: 70
+      evaluation_periods: 5
+      adjustment: 1
+  down:
+    cooldown: 600
+    threshold: 70
+    evaluation_periods: 5
+    adjustment: -1
