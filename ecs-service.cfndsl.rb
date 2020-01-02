@@ -434,7 +434,7 @@ CloudFormation do
     })
     TaskDefinition Ref('Task')
     SchedulingStrategy scheduling_strategy if !strategy.nil?
-    PlacementStrategies placement_strategies if !placement_strategies.nil?
+    PlacementStrategies placement_strategies if defined?(placement_strategies)
 
     if service_loadbalancer.any?
       Role Ref('Role') unless awsvpc_enabled
