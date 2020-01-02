@@ -17,6 +17,12 @@ log_retention: 7
 # task_placement_constraints:
 #   - "attribute:ecs.availability-zone==ap-southeast-2a"     
 #
+# placement_strategies:
+# - Field: memory
+#   Type: binpack
+# - Field: cpu
+#   Type: binpack
+#
 # task_definition:
 #   data:
 #     repo: some.custom.repo
