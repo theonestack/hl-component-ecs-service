@@ -1,7 +1,6 @@
 CloudFormation do
 
-  export_name = external_parameters.fetch(:export_name, '')
-  export = export_name.empty? ? external_parameters[:component_name] : export_name
+  export = external_parameters.fetch(:export_name, external_parameters[:component_name])
 
   awsvpc_enabled = false
   network_mode = external_parameters.fetch(:network_mode, '')
@@ -167,7 +166,7 @@ CloudFormation do
       
     end
 
-    definitions << task_def unless task_def.empty?
+    definitions << task_def
 
   end
 
@@ -182,7 +181,7 @@ CloudFormation do
       object = volume
     end
     task_volumes << object
-  end unless volumes.empty?
+  end
 
   # add task placement constraints 
   task_constraints =[];
@@ -191,7 +190,7 @@ CloudFormation do
     object = {Type: "memberOf"} 
     object.merge!({ Expression: FnSub(cntr)})
     task_constraints << object
-  end unless task_placement_constraints.empty?
+  end
 
 
   iam_policies = external_parameters.fetch(:iam_policies, {})
