@@ -4,7 +4,7 @@ CloudFormation do
   export = export_name.empty? ? external_parameters[:component_name] : export_name
 
   awsvpc_enabled = false
-  network_mode = external_parameters.fetch(network_mode, '')
+  network_mode = external_parameters.fetch(:network_mode, '')
   if network_mode == 'awsvpc'
     awsvpc_enabled = true
     Condition('IsFargate', FnEquals(Ref('EnableFargate'), 'true'))
