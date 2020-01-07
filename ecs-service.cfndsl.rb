@@ -421,14 +421,14 @@ CloudFormation do
 
 
   strategy = external_parameters.fetch(:scheduling_strategy, nil)
-  health_check_grace_period = external_parameters.fetch(:health_check_grace_period, '')
-  placement_strategies = external_parameters.fetch(:placement_strategies, '')
+  health_check_grace_period = external_parameters.fetch(:health_check_grace_period, nil)
+  placement_strategies = external_parameters.fetch(:placement_strategies, nil)
   ECS_Service('Service') do
     if awsvpc_enabled
         LaunchType FnIf('IsFargate', 'FARGATE', 'EC2')
     end
     Cluster Ref("EcsCluster")
-    HealthCheckGracePeriodSeconds health_check_grace_period unless health_check_grace_period.empty?
+    HealthCheckGracePeriodSeconds health_check_grace_period if !health_check_grace_period.nil?
     DesiredCount Ref('DesiredCount') if strategy != 'DAEMON'
     DeploymentConfiguration ({
         MinimumHealthyPercent: Ref('MinimumHealthyPercent'),
@@ -436,7 +436,7 @@ CloudFormation do
     })
     TaskDefinition Ref('Task')
     SchedulingStrategy scheduling_strategy if !strategy.nil?
-    PlacementStrategies placement_strategies unless placement_strategies.empty?
+    PlacementStrategies placement_strategies if !placement_strategies.nil?
 
     if service_loadbalancer.any?
       Role Ref('Role') unless awsvpc_enabled
