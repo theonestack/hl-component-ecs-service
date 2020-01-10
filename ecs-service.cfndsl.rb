@@ -421,6 +421,7 @@ CloudFormation do
 
 
   strategy = external_parameters.fetch(:scheduling_strategy, nil)
+  task_placement_distinct_instance_constraint = external_parameters.fetch(:distinct_instance_constraint, false)
   health_check_grace_period = external_parameters.fetch(:health_check_grace_period, nil)
   placement_strategies = external_parameters.fetch(:placement_strategies, nil)
   ECS_Service('Service') do
@@ -437,6 +438,7 @@ CloudFormation do
     TaskDefinition Ref('Task')
     SchedulingStrategy scheduling_strategy if !strategy.nil?
     PlacementStrategies placement_strategies if !placement_strategies.nil?
+    PlacementConstraints [{Type: "distinctInstance"}] if task_placement_distinct_instance_constraint
 
     if service_loadbalancer.any?
       Role Ref('Role') unless awsvpc_enabled
