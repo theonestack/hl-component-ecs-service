@@ -278,6 +278,7 @@ CloudFormation do
 
   service_loadbalancer = []
   targetgroup = external_parameters.fetch(:targetgroup, {})
+  rule_names = []
   unless targetgroup.empty?
 
     if targetgroup.has_key?('rules')
@@ -339,6 +340,7 @@ CloudFormation do
         else
           rule_name = "TargetRule#{index}"
         end
+        rule_names << rule_name
 
         ElasticLoadBalancingV2_ListenerRule(rule_name) do
           Actions [{ Type: "forward", TargetGroupArn: Ref('TaskTargetGroup') }]
@@ -424,6 +426,7 @@ CloudFormation do
   health_check_grace_period = external_parameters.fetch(:health_check_grace_period, nil)
   placement_strategies = external_parameters.fetch(:placement_strategies, nil)
   ECS_Service('Service') do
+    DependsOn rule_names if rule_names.any?
     if awsvpc_enabled
         LaunchType FnIf('IsFargate', 'FARGATE', 'EC2')
     end
