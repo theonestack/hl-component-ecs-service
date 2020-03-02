@@ -499,33 +499,7 @@ CloudFormation do
       ScalableDimension "ecs:service:DesiredCount"
       ServiceNamespace "ecs"
     }
-
-    ApplicationAutoScaling_ScalingPolicy(:ServiceScalingUpPolicy) {
-      Condition 'IsScalingEnabled'
-      PolicyName FnJoin('-', [ Ref('EnvironmentName'), external_parameters[:component_name], "scale-up-policy" ])
-      PolicyType "StepScaling"
-      ScalingTargetId Ref(:ServiceScalingTarget)
-      StepScalingPolicyConfiguration({
-        AdjustmentType: "ChangeInCapacity",
-        Cooldown: scaling_policy['up']['cooldown'] || 300,
-        MetricAggregationType: "Average",
-        StepAdjustments: [{ ScalingAdjustment: scaling_policy['up']['adjustment'].to_s, MetricIntervalLowerBound: 0 }]
-      })
-    }
-
-    ApplicationAutoScaling_ScalingPolicy(:ServiceScalingDownPolicy) {
-      Condition 'IsScalingEnabled'
-      PolicyName FnJoin('-', [ Ref('EnvironmentName'), external_parameters[:component_name], "scale-down-policy" ])
-      PolicyType 'StepScaling'
-      ScalingTargetId Ref(:ServiceScalingTarget)
-      StepScalingPolicyConfiguration({
-        AdjustmentType: "ChangeInCapacity",
-        Cooldown: scaling_policy['down']['cooldown'] || 900,
-        MetricAggregationType: "Average",
-        StepAdjustments: [{ ScalingAdjustment: scaling_policy['down']['adjustment'].to_s, MetricIntervalUpperBound: 0 }]
-      })
-    }
-
+    
     default_alarm = {}
     default_alarm['metric_name'] = 'CPUUtilization'
     default_alarm['namespace'] = 'AWS/ECS'
@@ -537,34 +511,80 @@ CloudFormation do
       { Name: 'ClusterName', Value: Ref('EcsCluster')}
     ]
 
-    CloudWatch_Alarm(:ServiceScaleUpAlarm) {
-      Condition 'IsScalingEnabled'
-      AlarmDescription FnJoin(' ', [Ref('EnvironmentName'), "#{external_parameters[:component_name]} ecs scale up alarm"])
-      MetricName scaling_policy['up']['metric_name'] || default_alarm['metric_name']
-      Namespace scaling_policy['up']['namespace'] || default_alarm['namespace']
-      Statistic scaling_policy['up']['statistic'] || default_alarm['statistic']
-      Period (scaling_policy['up']['period'] || default_alarm['period']).to_s
-      EvaluationPeriods scaling_policy['up']['evaluation_periods'].to_s
-      Threshold scaling_policy['up']['threshold'].to_s
-      AlarmActions [Ref(:ServiceScalingUpPolicy)]
-      ComparisonOperator 'GreaterThanThreshold'
-      Dimensions scaling_policy['up']['dimentions'] || default_alarm['dimentions']
-    }
 
-    CloudWatch_Alarm(:ServiceScaleDownAlarm) {
-      Condition 'IsScalingEnabled'
-      AlarmDescription FnJoin(' ', [Ref('EnvironmentName'), "#{external_parameters[:component_name]} ecs scale down alarm"])
-      MetricName scaling_policy['down']['metric_name'] || default_alarm['metric_name']
-      Namespace scaling_policy['down']['namespace'] || default_alarm['namespace']
-      Statistic scaling_policy['down']['statistic'] || default_alarm['statistic']
-      Period (scaling_policy['down']['period'] || default_alarm['period']).to_s
-      EvaluationPeriods scaling_policy['down']['evaluation_periods'].to_s
-      Threshold scaling_policy['down']['threshold'].to_s
-      AlarmActions [Ref(:ServiceScalingDownPolicy)]
-      ComparisonOperator 'LessThanThreshold'
-      Dimensions scaling_policy['down']['dimentions'] || default_alarm['dimentions']
-    }
+    if scaling_policy['up'].kind_of?(Hash)
+      scaling_policy['up'] = [scaling_policy['up']]
+    end
 
+    if scaling_policy['down'].kind_of?(Hash)
+      scaling_policy['down'] = [scaling_policy['down']]
+    end
+
+    scaling_policy['up'].each_with_index do |scale_up_policy, i|
+      logical_scaling_policy_name = "ServiceScalingUpPolicy"  + (i > 0 ? "#{i+1}" : "")
+      logical_alarm_name          = "ServiceScaleUpAlarm"     + (i > 0 ? "#{i+1}" : "")
+      policy_name                 = "scale-up-policy"         + (i > 0 ? "-#{i+1}" : "")
+      
+      ApplicationAutoScaling_ScalingPolicy(logical_scaling_policy_name) {
+        Condition 'IsScalingEnabled'
+        PolicyName FnJoin('-', [ Ref('EnvironmentName'), component_name, policy_name])
+        PolicyType "StepScaling"
+        ScalingTargetId Ref(:ServiceScalingTarget)
+        StepScalingPolicyConfiguration({
+          AdjustmentType: "ChangeInCapacity",
+          Cooldown: scale_up_policy['cooldown'] || 300,
+          MetricAggregationType: "Average",
+          StepAdjustments: [{ ScalingAdjustment: scale_up_policy['adjustment'].to_s, MetricIntervalLowerBound: 0 }]
+        })
+      }
+
+      CloudWatch_Alarm(logical_alarm_name) {
+        Condition 'IsScalingEnabled'
+        AlarmDescription FnJoin(' ', [Ref('EnvironmentName'), "#{component_name} ecs scale up alarm"])
+        MetricName scale_up_policy['metric_name'] || default_alarm['metric_name']
+        Namespace scale_up_policy['namespace'] || default_alarm['namespace']
+        Statistic scale_up_policy['statistic'] || default_alarm['statistic']
+        Period (scale_up_policy['period'] || default_alarm['period']).to_s
+        EvaluationPeriods scale_up_policy['evaluation_periods'].to_s
+        Threshold scale_up_policy['threshold'].to_s
+        AlarmActions [Ref(logical_scaling_policy_name)]
+        ComparisonOperator 'GreaterThanThreshold'
+        Dimensions scale_up_policy['dimentions'] || default_alarm['dimentions']
+      }
+    end
+
+    scaling_policy['down'].each_with_index do |scale_down_policy, i|
+      logical_scaling_policy_name = "ServiceScalingDownPolicy"  + (i > 0 ? "#{i+1}" : "")
+      logical_alarm_name          = "ServiceScaleDownAlarm"     + (i > 0 ? "#{i+1}" : "")
+      policy_name                 = "scale-down-policy"         + (i > 0 ? "-#{i+1}" : "")
+
+      ApplicationAutoScaling_ScalingPolicy(logical_scaling_policy_name) {
+        Condition 'IsScalingEnabled'
+        PolicyName FnJoin('-', [ Ref('EnvironmentName'), component_name, policy_name])
+        PolicyType 'StepScaling'
+        ScalingTargetId Ref(:ServiceScalingTarget)
+        StepScalingPolicyConfiguration({
+          AdjustmentType: "ChangeInCapacity",
+          Cooldown: scale_down_policy['cooldown'] || 900,
+          MetricAggregationType: "Average",
+          StepAdjustments: [{ ScalingAdjustment: scale_down_policy['adjustment'].to_s, MetricIntervalUpperBound: 0 }]
+        })
+      }
+
+      CloudWatch_Alarm(logical_alarm_name) {
+        Condition 'IsScalingEnabled'
+        AlarmDescription FnJoin(' ', [Ref('EnvironmentName'), "#{component_name} ecs scale down alarm"])
+        MetricName scale_down_policy['metric_name'] || default_alarm['metric_name']
+        Namespace scale_down_policy['namespace'] || default_alarm['namespace']
+        Statistic scale_down_policy['statistic'] || default_alarm['statistic']
+        Period (scale_down_policy['period'] || default_alarm['period']).to_s
+        EvaluationPeriods scale_down_policy['evaluation_periods'].to_s
+        Threshold scale_down_policy['threshold'].to_s
+        AlarmActions [Ref(logical_scaling_policy_name)]
+        ComparisonOperator 'LessThanThreshold'
+        Dimensions scale_down_policy['dimentions'] || default_alarm['dimentions']
+      }
+    end
   end
 
   Output("ServiceName") do
