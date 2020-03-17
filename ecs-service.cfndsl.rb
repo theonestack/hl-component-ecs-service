@@ -231,7 +231,6 @@ CloudFormation do
       Path '/'
       ManagedPolicyArns ["arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"]
 
-      secrets_policy = external_parameters.fetch(:secrets_policy, [])
       if secrets_policy.any?
         Policies secrets_policy
       end
