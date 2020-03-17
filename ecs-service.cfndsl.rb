@@ -392,6 +392,11 @@ CloudFormation do
       }
       sg_name = 'ServiceSecurityGroup'
     end
+    
+    Output(:SecurityGroup) {
+      Value(Ref(sg_name))
+      Export FnSub("${EnvironmentName}-#{export}-SecurityGroup")
+    }
   end
 
   registry = {}
