@@ -13,9 +13,10 @@ log_retention: 7
 #
 # volumes:
 #   - data-volume:/data
-# NOTE: task placement constraint only suport Type="memberOf"
+# NOTE: task_placement_constraint only suport Type="memberOf". Use distinct_instance_constraint: true for Type="distinctInstance"
 # task_placement_constraints:
 #   - "attribute:ecs.availability-zone==ap-southeast-2a"     
+# distinct_instance_constraint: true
 #
 # placement_strategies:
 # - Field: memory
