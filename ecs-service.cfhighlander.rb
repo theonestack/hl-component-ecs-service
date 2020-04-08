@@ -36,6 +36,7 @@ CfhighlanderTemplate do
       ComponentParam 'SubnetIds', type: 'CommaDelimitedList'
       ComponentParam 'SecurityGroupBackplane'
       ComponentParam 'EnableFargate', 'false'
+      ComponentParam 'DisableLaunchType', 'false'
     end
 
     task_definition.each do |task_def, task|

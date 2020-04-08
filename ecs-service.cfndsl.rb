@@ -7,6 +7,7 @@ CloudFormation do
   if network_mode == 'awsvpc'
     awsvpc_enabled = true
     Condition('IsFargate', FnEquals(Ref('EnableFargate'), 'true'))
+    Condition('IsEmptyLaunchType', FnEquals(Ref('DisableLaunchType'), 'true'))
   end
 
   tags = []
@@ -433,7 +434,7 @@ CloudFormation do
   ECS_Service('Service') do
     DependsOn rule_names if rule_names.any?
     if awsvpc_enabled
-        LaunchType FnIf('IsFargate', 'FARGATE', 'EC2')
+        LaunchType FnIf('IsEmptyLaunchType', Ref('AWS::NoValue'), FnIf('IsFargate', 'FARGATE', 'EC2'))
     end
     Cluster Ref("EcsCluster")
     HealthCheckGracePeriodSeconds health_check_grace_period if !health_check_grace_period.nil?
