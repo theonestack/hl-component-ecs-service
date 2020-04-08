@@ -1,0 +1,32 @@
+test_metadata:
+  type: config
+  name: linux_parameters
+  description: testing linux parameters in the task definition
+
+task_definition:
+  one:
+    repo: nginx
+    image: nginx
+    cap_add: 
+      - ALL
+    cap_drop: 
+      - MKNOD
+    init: true
+    memory_swap: 10
+    shm_size: 10
+    memory_swappiness: 10
+  two:
+    repo: nginx
+    image: nginx
+    cap_drop: 
+      - CHOWN
+
+targetgroup:
+  name: nginx
+  container: nginx
+  port: 80
+  protocol: http
+  listener: http
+  healthcheck:
+    path: /
+    code: 200
