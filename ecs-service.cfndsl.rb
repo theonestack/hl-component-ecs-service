@@ -29,7 +29,7 @@ CloudFormation do
   task_definition.each do |task_name, task|
 
     env_vars, mount_points, ports, volumes_from, port_mappings = Array.new(5){[]}
-
+    
     name = task.has_key?('name') ? task['name'] : task_name
 
     image_repo = task.has_key?('repo') ? "#{task['repo']}/" : ''
@@ -136,7 +136,38 @@ CloudFormation do
         depends_on << { ContainerName: name, Condition: value}
       end
     end
-
+    
+    linux_parameters = {}
+    
+    if task.key?('cap_add')
+      linux_parameters[:Capabilities] = {Add: task['cap_add']}
+    end
+    
+    if task.key?('cap_drop')
+      if linux_parameters.key?(:Capabilities)
+        linux_parameters[:Capabilities][:Drop] = task['cap_drop']
+      else
+        linux_parameters[:Capabilities] = {Drop: task['cap_drop']}
+      end
+    end
+    
+    if task.key?('init')
+      linux_parameters[:InitProcessEnabled] = task['init']
+    end
+    
+    if task.key?('memory_swap')
+      linux_parameters[:MaxSwap] = task['memory_swap'].to_i
+    end
+    
+    if task.key?('shm_size')
+      linux_parameters[:SharedMemorySize] = task['shm_size'].to_i
+    end
+    
+    if task.key?('memory_swappiness')
+      linux_parameters[:Swappiness] = task['memory_swappiness'].to_i
+    end
+    
+    task_def.merge!({LinuxParameters: linux_parameters}) if linux_parameters.any?
     task_def.merge!({EntryPoint: task['entrypoint'] }) if task.key?('entrypoint')
     task_def.merge!({Command: task['command'] }) if task.key?('command')
     task_def.merge!({HealthCheck: task['healthcheck'] }) if task.key?('healthcheck')
