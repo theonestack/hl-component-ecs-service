@@ -37,6 +37,7 @@ CfhighlanderTemplate do
       ComponentParam 'SecurityGroupBackplane'
       ComponentParam 'EnableFargate', 'false'
       ComponentParam 'DisableLaunchType', 'false'
+      ComponentParam 'EnableExports', 'true', allowedValues: ['true','false']
     end
 
     task_definition.each do |task_def, task|

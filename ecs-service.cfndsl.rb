@@ -16,6 +16,8 @@ CloudFormation do
   tags << { Key: "EnvironmentType", Value: Ref("EnvironmentType") }
 
   Condition('IsScalingEnabled', FnEquals(Ref('EnableScaling'), 'true'))
+  Condition('IsExportsEnabled', FnEquals(Ref('EnableExports'), 'true'))
+
 
   log_retention = external_parameters.fetch(:log_retention, 7)
 
@@ -423,10 +425,11 @@ CloudFormation do
       }
       sg_name = 'ServiceSecurityGroup'
     end
-    
+
     Output(:SecurityGroup) {
       Value(Ref(sg_name))
       Export FnSub("${EnvironmentName}-#{export}-SecurityGroup")
+      Condition 'IsExportsEnabled'
     }
   end
 
@@ -628,6 +631,7 @@ CloudFormation do
   Output("ServiceName") do
     Value(FnGetAtt(:Service, :Name))
     Export FnSub("${EnvironmentName}-#{export}-ServiceName")
+    Condition 'IsExportsEnabled'
   end unless task_definition.empty?
 
 end
