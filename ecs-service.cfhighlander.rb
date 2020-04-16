@@ -31,13 +31,13 @@ CfhighlanderTemplate do
     ComponentParam 'MaximumPercent', 200
 
     ComponentParam 'EnableScaling', 'false', allowedValues: ['true','false']
+    ComponentParam 'EnableExports', 'true', allowedValues: ['true','false']
 
     if ((defined? network_mode) && (network_mode == "awsvpc"))
       ComponentParam 'SubnetIds', type: 'CommaDelimitedList'
       ComponentParam 'SecurityGroupBackplane'
       ComponentParam 'EnableFargate', 'false'
       ComponentParam 'DisableLaunchType', 'false'
-      ComponentParam 'EnableExports', 'true', allowedValues: ['true','false']
     end
 
     task_definition.each do |task_def, task|
