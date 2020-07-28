@@ -1,0 +1,16 @@
+test_metadata:
+  type: config
+  name: extra_hosts
+  description: testing host entries added to the containers hostfile
+
+task_definition:
+  nginx:
+    repo: nginx
+    image: nginx
+    extra_hosts:
+      -
+        Hostname: example.com
+        IpAddress: 127.0.0.1
+      -
+        Hostname: example2.com
+        IpAddress: 127.0.0.2
