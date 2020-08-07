@@ -8,6 +8,8 @@ CfhighlanderTemplate do
     end
   end
 
+  DependsOn 'lib-iam'
+
   Description "ecs-service - #{component_name} - #{component_version}"
 
   Parameters do

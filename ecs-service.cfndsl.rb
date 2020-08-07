@@ -24,7 +24,8 @@ CloudFormation do
     RetentionInDays "#{log_retention}"
   }
 
-  definitions, task_volumes, secrets, secrets_policy = Array.new(4){[]}
+  definitions, task_volumes, secrets = Array.new(3){[]}
+  secrets_policy = {}
 
   task_definition = external_parameters.fetch(:task_definition, {})
   task_definition.each do |task_name, task|
@@ -183,13 +184,19 @@ CloudFormation do
       if task['secrets'].key?('ssm')
         secrets.push *task['secrets']['ssm'].map {|k,v| { Name: k, ValueFrom: v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter#{v}") : v }}
         resources = task['secrets']['ssm'].map {|k,v| v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter#{v}") : v }
-        secrets_policy.push iam_policy_allow('ssm-secrets','ssm:GetParameters', resources)
+        secrets_policy['ssm-secrets'] = {
+          'action' => 'ssm:GetParameters',
+          'resource' => resources
+        }
       end
       
       if task['secrets'].key?('secretsmanager')
         secrets.push *task['secrets']['secretsmanager'].map {|k,v| { Name: k, ValueFrom: v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:#{v}") : v }}
         resources = task['secrets']['secretsmanager'].map {|k,v| v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:#{v}-*") : v }
-        secrets_policy.push iam_policy_allow('secretsmanager','secretsmanager:GetSecretValue', resources)
+        secrets_policy['secretsmanager'] = {
+          'action' => 'secretsmanager:GetSecretValue',
+          'resource' => resources
+        }
       end
       
       if secrets.any?
@@ -229,42 +236,38 @@ CloudFormation do
   service_discovery = external_parameters.fetch(:service_discovery, {})
   unless iam_policies.empty?
 
-    policies = []
-    iam_policies.each do |name,policy|
-      policies << iam_policy_allow(name,policy['action'],policy['resource'] || '*')
-    end
-
     unless service_discovery.empty?
-      actions = %w(
-        servicediscovery:RegisterInstance
-        servicediscovery:DeregisterInstance
-        servicediscovery:DiscoverInstances
-        servicediscovery:Get*
-        servicediscovery:List*
-        route53:GetHostedZone
-        route53:ListHostedZonesByName
-        route53:ChangeResourceRecordSets
-        route53:CreateHealthCheck
-        route53:GetHealthCheck
-        route53:DeleteHealthCheck
-        route53:UpdateHealthCheck
-      )
-      policies << iam_policy_allow('ecs-service-discovery',actions,'*')
+      iam_policies['ecs-service-discovery'] = {
+        'action' => %w(
+          servicediscovery:RegisterInstance
+          servicediscovery:DeregisterInstance
+          servicediscovery:DiscoverInstances
+          servicediscovery:Get*
+          servicediscovery:List*
+          route53:GetHostedZone
+          route53:ListHostedZonesByName
+          route53:ChangeResourceRecordSets
+          route53:CreateHealthCheck
+          route53:GetHealthCheck
+          route53:DeleteHealthCheck
+          route53:UpdateHealthCheck
+        )
+      }
     end
 
     IAM_Role('TaskRole') do
-      AssumeRolePolicyDocument service_role_assume_policy(['ecs-tasks','ssm'])
+      AssumeRolePolicyDocument service_assume_role_policy(['ecs-tasks','ssm'])
       Path '/'
-      Policies(policies)
+      Policies(iam_role_policies(iam_policies))
     end
 
     IAM_Role('ExecutionRole') do
-      AssumeRolePolicyDocument service_role_assume_policy(['ecs-tasks','ssm'])
+      AssumeRolePolicyDocument service_assume_role_policy(['ecs-tasks','ssm'])
       Path '/'
       ManagedPolicyArns ["arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"]
 
       if secrets_policy.any?
-        Policies secrets_policy
+        Policies iam_role_policies(secrets_policy)
       end
 
     end
@@ -396,7 +399,7 @@ CloudFormation do
 
   unless awsvpc_enabled
     IAM_Role('Role') do
-      AssumeRolePolicyDocument service_role_assume_policy('ecs')
+      AssumeRolePolicyDocument service_assume_role_policy('ecs')
       Path '/'
       ManagedPolicyArns ["arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole"]
     end
@@ -508,7 +511,7 @@ CloudFormation do
 
     IAM_Role(:ServiceECSAutoScaleRole) {
       Condition 'IsScalingEnabled'
-      AssumeRolePolicyDocument service_role_assume_policy('application-autoscaling')
+      AssumeRolePolicyDocument service_assume_role_policy('application-autoscaling')
       Path '/'
       Policies ([
         PolicyName: 'ecs-scaling',
