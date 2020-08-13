@@ -471,6 +471,7 @@ CloudFormation do
     DependsOn rule_names if rule_names.any?
     if awsvpc_enabled
         LaunchType FnIf('IsEmptyLaunchType', Ref('AWS::NoValue'), FnIf('IsFargate', 'FARGATE', 'EC2'))
+        PlatformVersion Ref('PlatformVersion')
     end
     Cluster Ref("EcsCluster")
     HealthCheckGracePeriodSeconds health_check_grace_period if !health_check_grace_period.nil?

@@ -12,7 +12,11 @@ volumes:
     DockerVolumeConfiguration:
       Driver: rexray/s3fs
       Scope: shared
-
+  - Name:
+      Fn::Sub: ${EnvironmentName}-MyEFSMount
+    EFSVolumeConfiguration:
+      FilesystemId: fs-12345
+      RootDirectory: /my/desired/path
 
 task_definition:
   sftp:

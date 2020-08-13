@@ -39,6 +39,8 @@ CfhighlanderTemplate do
       ComponentParam 'SecurityGroupBackplane'
       ComponentParam 'EnableFargate', 'false'
       ComponentParam 'DisableLaunchType', 'false'
+      default_platform_version = defined?(platform_version) ? platform_version.to_s : 'LATEST'
+      ComponentParam 'PlatformVersion', default_platform_version.to_s
     end
 
     task_definition.each do |task_def, task|
