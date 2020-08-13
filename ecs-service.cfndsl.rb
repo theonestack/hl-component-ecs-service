@@ -60,6 +60,7 @@ CloudFormation do
     task_def.merge!({ Ulimits: task['ulimits'] }) if task.has_key?('ulimits')
 
 
+
     if !(task['env_vars'].nil?)
       task['env_vars'].each do |name,value|
         split_value = value.to_s.split(/\${|}/)
@@ -177,6 +178,7 @@ CloudFormation do
     task_def.merge!({Privileged: task['privileged'] }) if task.key?('privileged')
     task_def.merge!({User: task['user'] }) if task.key?('user')
     task_def.merge!({DependsOn: depends_on }) if depends_on.length > 0
+    task_def.merge!({ ExtraHosts: task['extra_hosts'] }) if task.has_key?('extra_hosts')
 
 
     if task.key?('secrets')
@@ -469,6 +471,7 @@ CloudFormation do
     DependsOn rule_names if rule_names.any?
     if awsvpc_enabled
         LaunchType FnIf('IsEmptyLaunchType', Ref('AWS::NoValue'), FnIf('IsFargate', 'FARGATE', 'EC2'))
+        PlatformVersion Ref('PlatformVersion') if defined?(platform_version)
     end
     Cluster Ref("EcsCluster")
     HealthCheckGracePeriodSeconds health_check_grace_period if !health_check_grace_period.nil?
