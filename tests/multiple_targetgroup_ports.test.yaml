@@ -1,0 +1,30 @@
+test_metadata:
+  type: config
+  name: multiple_targetgroup_ports
+  description: |
+    Add the same ecs service to the same target group multiple times with different ports.
+    If container_ports key is specified with list of ports those ports are used to add multiple target group references to the ECS service.
+    If container_ports is not set the default target group port is used.
+
+task_definition:
+  nginx:
+    repo: nginx
+    image: nginx
+    ports:
+      - 8080
+      - 8081
+      - 8082
+
+targetgroup:
+  name: nginx
+  container: nginx
+  port: 8080
+  container_ports:
+    - 8080
+    - 8081
+    - 8082
+  protocol: http
+  listener: http
+  healthcheck:
+    path: /
+    code: 200

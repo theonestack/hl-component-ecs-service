@@ -392,11 +392,16 @@ CloudFormation do
       targetgroup_arn = Ref('TargetGroup')
     end
 
-    service_loadbalancer << {
-      ContainerName: targetgroup['container'],
-      ContainerPort: targetgroup['port'],
-      TargetGroupArn: targetgroup_arn
-    }
+    container_ports = external_parameters.fetch(:container_ports, [targetgroup['port']])
+
+    container_ports.each do |container_port|
+      service_loadbalancer << {
+        ContainerName: targetgroup['container'],
+        ContainerPort: container_port,
+        TargetGroupArn: targetgroup_arn
+      }
+    end
+    
   end
 
   unless awsvpc_enabled
