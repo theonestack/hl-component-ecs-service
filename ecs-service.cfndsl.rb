@@ -368,7 +368,6 @@ CloudFormation do
         end
         
         targetgroup['rules'].each_with_index do |rule, index|
-          puts rule
           listener_conditions = []
           if rule.key?("path")
             listener_conditions << { Field: "path-pattern", Values: [ rule["path"] ] }
