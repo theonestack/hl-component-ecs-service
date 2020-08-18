@@ -316,7 +316,19 @@ CloudFormation do
   targetgroups = external_parameters.fetch(:targetgroup, {})
   rule_names = []
   unless targetgroups.empty?
-    targetgroups = [targetgroups] if !targetgroups.is_a?(Array)
+
+    if !targetgroups.is_a?(Array)
+      # Keep original resource names for backwards compatibility
+      targetgroups['resource_name'] = targetgroup.has_key?('rules') ? 'TargetGroup' : 'TaskTargetGroup'
+      targetgroups['listener_resource'] = 'Listener'
+      targetgroups = [targetgroups]
+    else
+      # Generate resource names based upon the target group name and the listener and suffix with resource type
+      targetgroups.each do |tg| 
+        tg['resource_name'] = "#{tg['name'].gsub(/[^0-9A-Za-z]/, '')}TargetGroup"
+        tg['listener_resource'] = "#{tg['listener']}Listener"
+      end
+    end
 
     targetgroups.each do |targetgroup|
       if targetgroup.has_key?('rules')
@@ -332,7 +344,7 @@ CloudFormation do
           tg_tags << { Key: key, Value: value }
         end if targetgroup.has_key?('tags')
   
-        ElasticLoadBalancingV2_TargetGroup('TaskTargetGroup') do
+        ElasticLoadBalancingV2_TargetGroup(targetgroup['resource_name']) do
           ## Required
           Port targetgroup['port']
           Protocol targetgroup['protocol'].upcase
@@ -356,6 +368,7 @@ CloudFormation do
         end
         
         targetgroup['rules'].each_with_index do |rule, index|
+          puts rule
           listener_conditions = []
           if rule.key?("path")
             listener_conditions << { Field: "path-pattern", Values: [ rule["path"] ] }
@@ -380,23 +393,19 @@ CloudFormation do
           rule_names << rule_name
   
           ElasticLoadBalancingV2_ListenerRule(rule_name) do
-            Actions [{ Type: "forward", TargetGroupArn: Ref('TaskTargetGroup') }]
+            Actions [{ Type: "forward", TargetGroupArn: Ref(targetgroup['resource_name']) }]
             Conditions listener_conditions
-            ListenerArn Ref("Listener")
+            ListenerArn Ref(targetgroup['listener_resource'])
             Priority rule['priority']
           end
   
         end
-  
-        targetgroup_arn = Ref('TaskTargetGroup')
-      else
-        targetgroup_arn = Ref('TargetGroup')
       end
   
       service_loadbalancer << {
         ContainerName: targetgroup['container'],
         ContainerPort: targetgroup['port'],
-        TargetGroupArn: targetgroup_arn
+        TargetGroupArn: Ref(targetgroup['resource_name'])
       }
     end
   end

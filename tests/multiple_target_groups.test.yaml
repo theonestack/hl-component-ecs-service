@@ -3,6 +3,7 @@ test_metadata:
   name: multiple_target_groups
   description: |
     Place a ECS Service in multiple target groups to either set behind multiple loadbalancers or listerens in the same loadbalancer
+    A target group resource is created for each object in the targetgroup array and generates resource names based upon the config values nor name and listener
 
 task_definition:
   nginx:
@@ -23,6 +24,10 @@ targetgroup:
   healthcheck:
     path: /
     code: 200
+  rules:
+    - name: webhttp
+      priority: 100
+      host: www.*
 -
   name: nginx-https
   container: nginx
@@ -32,3 +37,7 @@ targetgroup:
   healthcheck:
     path: /
     code: 200
+  rules:
+    - name: webhttps
+      priority: 100
+      host: www.*
