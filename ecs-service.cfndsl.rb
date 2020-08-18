@@ -313,90 +313,92 @@ CloudFormation do
   end unless task_definition.empty?
 
   service_loadbalancer = []
-  targetgroup = external_parameters.fetch(:targetgroup, {})
+  targetgroups = external_parameters.fetch(:targetgroup, {})
   rule_names = []
-  unless targetgroup.empty?
+  unless targetgroups.empty?
+    targetgroups = [targetgroups] if !targetgroups.is_a?(Array)
 
-    if targetgroup.has_key?('rules')
-
-      attributes = []
-
-      targetgroup['attributes'].each do |key,value|
-        attributes << { Key: key, Value: value }
-      end if targetgroup.has_key?('attributes')
-
-      tg_tags = tags.map(&:clone)
-
-      targetgroup['tags'].each do |key,value|
-        tg_tags << { Key: key, Value: value }
-      end if targetgroup.has_key?('tags')
-
-      ElasticLoadBalancingV2_TargetGroup('TaskTargetGroup') do
-        ## Required
-        Port targetgroup['port']
-        Protocol targetgroup['protocol'].upcase
-        VpcId Ref('VPCId')
-        ## Optional
-        if targetgroup.has_key?('healthcheck')
-          HealthCheckPort targetgroup['healthcheck']['port'] if targetgroup['healthcheck'].has_key?('port')
-          HealthCheckProtocol targetgroup['healthcheck']['protocol'] if targetgroup['healthcheck'].has_key?('port')
-          HealthCheckIntervalSeconds targetgroup['healthcheck']['interval'] if targetgroup['healthcheck'].has_key?('interval')
-          HealthCheckTimeoutSeconds targetgroup['healthcheck']['timeout'] if targetgroup['healthcheck'].has_key?('timeout')
-          HealthyThresholdCount targetgroup['healthcheck']['healthy_count'] if targetgroup['healthcheck'].has_key?('healthy_count')
-          UnhealthyThresholdCount targetgroup['healthcheck']['unhealthy_count'] if targetgroup['healthcheck'].has_key?('unhealthy_count')
-          HealthCheckPath targetgroup['healthcheck']['path'] if targetgroup['healthcheck'].has_key?('path')
-          Matcher ({ HttpCode: targetgroup['healthcheck']['code'] }) if targetgroup['healthcheck'].has_key?('code')
-        end
-
-        TargetType targetgroup['type'] if targetgroup.has_key?('type')
-        TargetGroupAttributes attributes if attributes.any?
-
-        Tags tg_tags
-      end
-
-      targetgroup['rules'].each_with_index do |rule, index|
-        listener_conditions = []
-        if rule.key?("path")
-          listener_conditions << { Field: "path-pattern", Values: [ rule["path"] ] }
-        end
-        if rule.key?("host")
-          hosts = []
-          if rule["host"].include?('.') || rule["host"].key?("Fn::Join")
-            hosts << rule["host"]
-          else
-            hosts << FnJoin("", [ rule["host"], ".", Ref("EnvironmentName"), ".", Ref('DnsDomain') ])
+    targetgroups.each do |targetgroup|
+      if targetgroup.has_key?('rules')
+        attributes = []
+  
+        targetgroup['attributes'].each do |key,value|
+          attributes << { Key: key, Value: value }
+        end if targetgroup.has_key?('attributes')
+  
+        tg_tags = tags.map(&:clone)
+  
+        targetgroup['tags'].each do |key,value|
+          tg_tags << { Key: key, Value: value }
+        end if targetgroup.has_key?('tags')
+  
+        ElasticLoadBalancingV2_TargetGroup('TaskTargetGroup') do
+          ## Required
+          Port targetgroup['port']
+          Protocol targetgroup['protocol'].upcase
+          VpcId Ref('VPCId')
+          ## Optional
+          if targetgroup.has_key?('healthcheck')
+            HealthCheckPort targetgroup['healthcheck']['port'] if targetgroup['healthcheck'].has_key?('port')
+            HealthCheckProtocol targetgroup['healthcheck']['protocol'] if targetgroup['healthcheck'].has_key?('port')
+            HealthCheckIntervalSeconds targetgroup['healthcheck']['interval'] if targetgroup['healthcheck'].has_key?('interval')
+            HealthCheckTimeoutSeconds targetgroup['healthcheck']['timeout'] if targetgroup['healthcheck'].has_key?('timeout')
+            HealthyThresholdCount targetgroup['healthcheck']['healthy_count'] if targetgroup['healthcheck'].has_key?('healthy_count')
+            UnhealthyThresholdCount targetgroup['healthcheck']['unhealthy_count'] if targetgroup['healthcheck'].has_key?('unhealthy_count')
+            HealthCheckPath targetgroup['healthcheck']['path'] if targetgroup['healthcheck'].has_key?('path')
+            Matcher ({ HttpCode: targetgroup['healthcheck']['code'] }) if targetgroup['healthcheck'].has_key?('code')
           end
-          listener_conditions << { Field: "host-header", Values: hosts }
+  
+          TargetType targetgroup['type'] if targetgroup.has_key?('type')
+          TargetGroupAttributes attributes if attributes.any?
+  
+          Tags tg_tags
         end
-
-        if rule.key?("name")
-          rule_name = rule['name']
-        elsif rule['priority'].is_a? Integer
-          rule_name = "TargetRule#{rule['priority']}"
-        else
-          rule_name = "TargetRule#{index}"
+        
+        targetgroup['rules'].each_with_index do |rule, index|
+          listener_conditions = []
+          if rule.key?("path")
+            listener_conditions << { Field: "path-pattern", Values: [ rule["path"] ] }
+          end
+          if rule.key?("host")
+            hosts = []
+            if rule["host"].include?('.') || rule["host"].key?("Fn::Join")
+              hosts << rule["host"]
+            else
+              hosts << FnJoin("", [ rule["host"], ".", Ref("EnvironmentName"), ".", Ref('DnsDomain') ])
+            end
+            listener_conditions << { Field: "host-header", Values: hosts }
+          end
+  
+          if rule.key?("name")
+            rule_name = rule['name']
+          elsif rule['priority'].is_a? Integer
+            rule_name = "TargetRule#{rule['priority']}"
+          else
+            rule_name = "TargetRule#{index}"
+          end
+          rule_names << rule_name
+  
+          ElasticLoadBalancingV2_ListenerRule(rule_name) do
+            Actions [{ Type: "forward", TargetGroupArn: Ref('TaskTargetGroup') }]
+            Conditions listener_conditions
+            ListenerArn Ref("Listener")
+            Priority rule['priority']
+          end
+  
         end
-        rule_names << rule_name
-
-        ElasticLoadBalancingV2_ListenerRule(rule_name) do
-          Actions [{ Type: "forward", TargetGroupArn: Ref('TaskTargetGroup') }]
-          Conditions listener_conditions
-          ListenerArn Ref("Listener")
-          Priority rule['priority']
-        end
-
+  
+        targetgroup_arn = Ref('TaskTargetGroup')
+      else
+        targetgroup_arn = Ref('TargetGroup')
       end
-
-      targetgroup_arn = Ref('TaskTargetGroup')
-    else
-      targetgroup_arn = Ref('TargetGroup')
+  
+      service_loadbalancer << {
+        ContainerName: targetgroup['container'],
+        ContainerPort: targetgroup['port'],
+        TargetGroupArn: targetgroup_arn
+      }
     end
-
-    service_loadbalancer << {
-      ContainerName: targetgroup['container'],
-      ContainerPort: targetgroup['port'],
-      TargetGroupArn: targetgroup_arn
-    }
   end
 
   unless awsvpc_enabled

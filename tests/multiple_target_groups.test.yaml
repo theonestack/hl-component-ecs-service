@@ -1,0 +1,34 @@
+test_metadata:
+  type: config
+  name: multiple_target_groups
+  description: |
+    Place a ECS Service in multiple target groups to either set behind multiple loadbalancers or listerens in the same loadbalancer
+
+task_definition:
+  nginx:
+    repo: nginx
+    image: nginx
+    ports:
+      - 80
+      - 443
+        
+
+targetgroup:
+-
+  name: nginx-http
+  container: nginx
+  port: 80
+  protocol: http
+  listener: http
+  healthcheck:
+    path: /
+    code: 200
+-
+  name: nginx-https
+  container: nginx
+  port: 443
+  protocol: https
+  listener: https
+  healthcheck:
+    path: /
+    code: 200
