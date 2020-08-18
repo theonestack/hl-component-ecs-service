@@ -319,7 +319,7 @@ CloudFormation do
 
     if !targetgroups.is_a?(Array)
       # Keep original resource names for backwards compatibility
-      targetgroups['resource_name'] = targetgroup.has_key?('rules') ? 'TargetGroup' : 'TaskTargetGroup'
+      targetgroups['resource_name'] = targetgroup.has_key?('rules') ? 'TaskTargetGroup' : 'TargetGroup'
       targetgroups['listener_resource'] = 'Listener'
       targetgroups = [targetgroups]
     else
