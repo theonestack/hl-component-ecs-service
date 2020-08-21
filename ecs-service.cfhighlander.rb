@@ -22,10 +22,21 @@ CfhighlanderTemplate do
     end
 
     if defined? targetgroup
-      ComponentParam 'LoadBalancer'
-      ComponentParam 'TargetGroup'
-      ComponentParam 'Listener'
       ComponentParam 'DnsDomain'
+
+      if targetgroup.is_a?(Array)
+        targetgroup.each do |tg|
+          if tg.has_key?('rules')
+            ComponentParam "#{tg['listener']}Listener"
+          else
+            ComponentParam "#{tg['name'].gsub(/[^0-9A-Za-z]/, '')}TargetGroup"
+          end
+        end
+      else
+        ComponentParam 'TargetGroup'
+        ComponentParam 'Listener'
+        ComponentParam 'LoadBalancer'
+      end
     end
 
     ComponentParam 'DesiredCount', 1
