@@ -30,6 +30,8 @@ log_retention: 7
 #     image: data
 #     memory: 128
 #     tag_param: DataTag
+#     NOTE: specify log_pattern (below) if you want to add an awslogs-multiline-pattern to the log driver, otherwise leave it out
+#     log_pattern: "^INFO"
 #     not_essential: true
 #     env_vars:
 #       KEY: value

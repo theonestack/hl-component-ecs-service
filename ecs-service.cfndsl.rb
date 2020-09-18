@@ -53,6 +53,10 @@ CloudFormation do
       }
     }
 
+    if task.has_key?('log_pattern')
+      task_def[:LogConfiguration][:Options]["awslogs-multiline-pattern"] = task['log_pattern']
+    end
+
     task_def.merge!({ MemoryReservation: task['memory'] }) if task.has_key?('memory')
     task_def.merge!({ Memory: task['memory_hard'] }) if task.has_key?('memory_hard')
     task_def.merge!({ Cpu: task['cpu'] }) if task.has_key?('cpu')
