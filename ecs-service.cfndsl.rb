@@ -31,7 +31,7 @@ CloudFormation do
   task_definition.each do |task_name, task|
 
     env_vars, mount_points, ports, volumes_from, port_mappings = Array.new(5){[]}
-    
+
     name = task.has_key?('name') ? task['name'] : task_name
 
     image_repo = task.has_key?('repo') ? "#{task['repo']}/" : ''
@@ -62,6 +62,10 @@ CloudFormation do
     task_def.merge!({ Cpu: task['cpu'] }) if task.has_key?('cpu')
 
     task_def.merge!({ Ulimits: task['ulimits'] }) if task.has_key?('ulimits')
+    
+    task_def.merge!({ StartTimeout: task['start_timeout'] }) if task.has_key?('start_timeout')
+    task_def.merge!({ StopTimeout: task['stop_timeout'] }) if task.has_key?('stop_timeout')
+
 
 
 
@@ -143,13 +147,13 @@ CloudFormation do
         depends_on << { ContainerName: name, Condition: value}
       end
     end
-    
+
     linux_parameters = {}
-    
+
     if task.key?('cap_add')
       linux_parameters[:Capabilities] = {Add: task['cap_add']}
     end
-    
+
     if task.key?('cap_drop')
       if linux_parameters.key?(:Capabilities)
         linux_parameters[:Capabilities][:Drop] = task['cap_drop']
@@ -157,23 +161,23 @@ CloudFormation do
         linux_parameters[:Capabilities] = {Drop: task['cap_drop']}
       end
     end
-    
+
     if task.key?('init')
       linux_parameters[:InitProcessEnabled] = task['init']
     end
-    
+
     if task.key?('memory_swap')
       linux_parameters[:MaxSwap] = task['memory_swap'].to_i
     end
-    
+
     if task.key?('shm_size')
       linux_parameters[:SharedMemorySize] = task['shm_size'].to_i
     end
-    
+
     if task.key?('memory_swappiness')
       linux_parameters[:Swappiness] = task['memory_swappiness'].to_i
     end
-    
+
     task_def.merge!({LinuxParameters: linux_parameters}) if linux_parameters.any?
     task_def.merge!({EntryPoint: task['entrypoint'] }) if task.key?('entrypoint')
     task_def.merge!({Command: task['command'] }) if task.key?('command')
@@ -186,7 +190,7 @@ CloudFormation do
 
 
     if task.key?('secrets')
-      
+
       if task['secrets'].key?('ssm')
         secrets.push *task['secrets']['ssm'].map {|k,v| { Name: k, ValueFrom: v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter#{v}") : v }}
         resources = task['secrets']['ssm'].map {|k,v| v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter#{v}") : v }
@@ -195,7 +199,7 @@ CloudFormation do
           'resource' => resources
         }
       end
-      
+
       if task['secrets'].key?('secretsmanager')
         secrets.push *task['secrets']['secretsmanager'].map {|k,v| { Name: k, ValueFrom: v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:#{v}") : v }}
         resources = task['secrets']['secretsmanager'].map {|k,v| v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:#{v}-*") : v }
@@ -204,11 +208,11 @@ CloudFormation do
           'resource' => resources
         }
       end
-      
+
       if secrets.any?
         task_def.merge!({Secrets: secrets})
       end
-      
+
     end
 
     definitions << task_def
@@ -228,11 +232,11 @@ CloudFormation do
     task_volumes << object
   end
 
-  # add task placement constraints 
+  # add task placement constraints
   task_constraints =[];
   task_placement_constraints = external_parameters.fetch(:task_placement_constraints, [])
   task_placement_constraints.each do |cntr|
-    object = {Type: "memberOf"} 
+    object = {Type: "memberOf"}
     object.merge!({ Expression: FnSub(cntr)})
     task_constraints << object
   end
@@ -305,7 +309,7 @@ CloudFormation do
     end
 
     if task_constraints.any?
-      PlacementConstraints task_constraints 
+      PlacementConstraints task_constraints
     end
 
     if awsvpc_enabled
@@ -328,7 +332,7 @@ CloudFormation do
       targetgroups = [targetgroups]
     else
       # Generate resource names based upon the target group name and the listener and suffix with resource type
-      targetgroups.each do |tg| 
+      targetgroups.each do |tg|
         tg['resource_name'] = "#{tg['name'].gsub(/[^0-9A-Za-z]/, '')}TargetGroup"
         tg['listener_resource'] = "#{tg['listener']}Listener"
       end
@@ -337,17 +341,17 @@ CloudFormation do
     targetgroups.each do |targetgroup|
       if targetgroup.has_key?('rules')
         attributes = []
-  
+
         targetgroup['attributes'].each do |key,value|
           attributes << { Key: key, Value: value }
         end if targetgroup.has_key?('attributes')
-  
+
         tg_tags = tags.map(&:clone)
-  
+
         targetgroup['tags'].each do |key,value|
           tg_tags << { Key: key, Value: value }
         end if targetgroup.has_key?('tags')
-  
+
         ElasticLoadBalancingV2_TargetGroup(targetgroup['resource_name']) do
           ## Required
           Port targetgroup['port']
@@ -364,13 +368,13 @@ CloudFormation do
             HealthCheckPath targetgroup['healthcheck']['path'] if targetgroup['healthcheck'].has_key?('path')
             Matcher ({ HttpCode: targetgroup['healthcheck']['code'] }) if targetgroup['healthcheck'].has_key?('code')
           end
-  
+
           TargetType targetgroup['type'] if targetgroup.has_key?('type')
           TargetGroupAttributes attributes if attributes.any?
-  
+
           Tags tg_tags
         end
-        
+
         targetgroup['rules'].each_with_index do |rule, index|
           listener_conditions = []
           if rule.key?("path")
@@ -385,7 +389,7 @@ CloudFormation do
             end
             listener_conditions << { Field: "host-header", Values: hosts }
           end
-  
+
           if rule.key?("name")
             rule_name = rule['name']
           elsif rule['priority'].is_a? Integer
@@ -394,17 +398,17 @@ CloudFormation do
             rule_name = "TargetRule#{index}"
           end
           rule_names << rule_name
-  
+
           ElasticLoadBalancingV2_ListenerRule(rule_name) do
             Actions [{ Type: "forward", TargetGroupArn: Ref(targetgroup['resource_name']) }]
             Conditions listener_conditions
             ListenerArn Ref(targetgroup['listener_resource'])
             Priority rule['priority']
           end
-  
+
         end
       end
-  
+
       service_loadbalancer << {
         ContainerName: targetgroup['container'],
         ContainerPort: targetgroup['port'],
@@ -442,7 +446,7 @@ CloudFormation do
       }
       sg_name = 'ServiceSecurityGroup'
     end
-    
+
     Output(:SecurityGroup) {
       Value(Ref(sg_name))
       Export FnSub("${EnvironmentName}-#{export}-SecurityGroup")
@@ -557,7 +561,7 @@ CloudFormation do
       ScalableDimension "ecs:service:DesiredCount"
       ServiceNamespace "ecs"
     }
-    
+
     default_alarm = {}
     default_alarm['metric_name'] = 'CPUUtilization'
     default_alarm['namespace'] = 'AWS/ECS'
@@ -582,7 +586,7 @@ CloudFormation do
       logical_scaling_policy_name = "ServiceScalingUpPolicy"  + (i > 0 ? "#{i+1}" : "")
       logical_alarm_name          = "ServiceScaleUpAlarm"     + (i > 0 ? "#{i+1}" : "")
       policy_name                 = "scale-up-policy"         + (i > 0 ? "-#{i+1}" : "")
-      
+
       ApplicationAutoScaling_ScalingPolicy(logical_scaling_policy_name) {
         Condition 'IsScalingEnabled'
         PolicyName FnJoin('-', [ Ref('EnvironmentName'), component_name, policy_name])
