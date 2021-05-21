@@ -22,7 +22,7 @@ CloudFormation do
 
 
   Logs_LogGroup('LogGroup') {
-    LogGroupName "#{loggroup_name}"
+    LogGroupName loggroup_name
     RetentionInDays "#{log_retention}"
   }
 
