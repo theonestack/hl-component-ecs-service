@@ -1,0 +1,6 @@
+test_metadata:
+  type: config
+  name: custom_loggroup
+  description: Change the name of the log group this service uses
+
+loggroup_name: '2021-logs-nginx'

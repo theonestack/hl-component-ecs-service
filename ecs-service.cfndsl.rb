@@ -18,9 +18,11 @@ CloudFormation do
   Condition('IsScalingEnabled', FnEquals(Ref('EnableScaling'), 'true'))
 
   log_retention = external_parameters.fetch(:log_retention, 7)
+  loggroup_name = external_parameters.fetch(:loggroup_name, Ref('AWS::StackName'))
+
 
   Logs_LogGroup('LogGroup') {
-    LogGroupName Ref('AWS::StackName')
+    LogGroupName loggroup_name
     RetentionInDays "#{log_retention}"
   }
 
