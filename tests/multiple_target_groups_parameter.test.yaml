@@ -1,6 +1,6 @@
 test_metadata:
   type: config
-  name: multiple_target_groups
+  name: multiple_target_groups_parameter
   description: |
     Place a ECS Service in multiple target groups to either set behind multiple loadbalancers or listerens in the same loadbalancer
     A parameter is created for each target group reference in the target group array

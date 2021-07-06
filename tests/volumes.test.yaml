@@ -1,6 +1,6 @@
 test_metadata:
   type: config
-  name: ecs service with volumes that include a Ref
+  name: volumes
   description: Creates an ecs service with volumes
 
 volumes:

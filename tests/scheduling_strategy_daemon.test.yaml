@@ -1,6 +1,6 @@
 test_metadata:
   type: config
-  name: ecs service with daemon scheduling
+  name: scheduling_strategy_daemon
   description: Creates an ECS service with the daemon scheduling strategy
 
 scheduling_strategy: DAEMON

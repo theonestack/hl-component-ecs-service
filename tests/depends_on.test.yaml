@@ -1,7 +1,7 @@
 test_metadata:
   type: config
-  name: nginx
-  description: create a nginx ecs service with a targetgroup
+  name: depends_on
+  description: creates a task that depends on another task to start
 
 task_definition: 
 

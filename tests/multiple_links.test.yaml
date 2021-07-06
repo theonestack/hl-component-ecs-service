@@ -1,6 +1,6 @@
 test_metadata:
   type: config
-  name: nginx
+  name: multiple_links
   description: create a nginx ecs service with a targetgroup
 
 task_definition: 

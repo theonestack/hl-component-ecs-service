@@ -1,6 +1,6 @@
 test_metadata:
   type: config
-  name: ecs service with daemon scheduling
+  name: task_placement_constraint
   description: Creates an ECS service with the daemon scheduling strategy
 
 task_placement_constraints:

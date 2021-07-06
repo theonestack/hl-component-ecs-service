@@ -1,6 +1,6 @@
 test_metadata:
   type: config
-  name: nginx
+  name: nginx_service
   description: create a nginx ecs service with a targetgroup
 
 health_check_grace_period: 60

@@ -1,6 +1,6 @@
 test_metadata:
   type: config
-  name: multiple scaling policies
+  name: multiple_scaling_policies
   description: create an ECS service with multiple scaling policies
 
 task_definition:
