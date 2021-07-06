@@ -351,6 +351,7 @@ scheduling_strategy: DAEMON
 ### TaskRole
 
 **Type:** AWS::IAM::Role
+
 **Condition:** if `iam_policies` config contains policies
 
 IAM permissions for the ECS service tasks runtime
@@ -359,6 +360,7 @@ IAM permissions for the ECS service tasks runtime
 ### ExecutionRole
 
 **Type:** AWS::IAM::Role
+
 **Condition:** if `iam_policies` config contains policies
 
 IAM permissions or the ECS agent to make AWS API calls on your behalf such as retrieve secrets. Default managed policy uses `arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy`
@@ -391,6 +393,7 @@ Cloudwatch log group for the tasks to send logs too
 ### TargetGroup
 
 **Type:** AWS::ElasticLoadBalancingV2::TargetGroup
+
 **Condition:** if `target_groups` config contains a list of target groups
 
 Creates a target group resource per target group defined in the config
@@ -399,20 +402,25 @@ Creates a target group resource per target group defined in the config
 ### ListenerRule
 
 **Type:** AWS::ElasticLoadBalancingV2::ListenerRule
+
 **Condition:** if `target_groups` config contains a target groups with rules
 
 Creates a listener rule for the supplied listener for each rule defined on the target group
 
+
 ### ServiceSecurityGroup
 
 **Type:** AWS::EC2::SecurityGroup
+
 **Condition:** if `security_group_rules` config contains rules
 
 Creates a security group with defined rules and attaches it to the ECS task if using `aws-vpc` networking
 
+
 ### ServiceRegistry
 
 **Type:** AWS::ServiceDiscovery::Service
+
 **Condition:** if `service_discovery` config is defined
 
 
