@@ -27,7 +27,7 @@ CloudFormation do
   }
 
   definitions, task_volumes, secrets = Array.new(3){[]}
-  secrets_policy = {}
+  secrets_policy = external_parameters.fetch(:secrets_policy, {})
 
   task_definition = external_parameters.fetch(:task_definition, {})
   task_definition.each do |task_name, task|
