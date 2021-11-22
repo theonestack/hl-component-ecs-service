@@ -19,12 +19,11 @@ CloudFormation do
 
   log_retention = external_parameters.fetch(:log_retention, 7)
   loggroup_name = external_parameters.fetch(:loggroup_name, Ref('AWS::StackName'))
-  loggroup_retain = external_parameters.fetch(:loggroup_retain, false)
+
 
   Logs_LogGroup('LogGroup') {
     LogGroupName loggroup_name
     RetentionInDays "#{log_retention}"
-    DeletionPolicy 'Retain' if loggroup_retain
   }
 
   definitions, task_volumes, secrets = Array.new(3){[]}
@@ -194,8 +193,8 @@ CloudFormation do
     if task.key?('secrets')
       
       if task['secrets'].key?('ssm')
-        secrets.push *task['secrets']['ssm'].map {|k,v| { Name: k, ValueFrom: v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter#{v}") : v }}
-        resources = task['secrets']['ssm'].map {|k,v| v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter#{v}") : v }
+        secrets.push *task['secrets']['ssm'].map {|k,v| { Name: k, ValueFrom: v.is_a?(String) && v.start_with?('arn') ? v : FnSub("arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter#{v}") }}
+        resources = task['secrets']['ssm'].map {|k,v| v.is_a?(String) && v.start_with?('arn') ? v : FnSub("arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter#{v}*") }
         secrets_policy['ssm-secrets'] = {
           'action' => 'ssm:GetParameters',
           'resource' => resources
@@ -203,8 +202,8 @@ CloudFormation do
       end
       
       if task['secrets'].key?('secretsmanager')
-        secrets.push *task['secrets']['secretsmanager'].map {|k,v| { Name: k, ValueFrom: v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:#{v}") : v }}
-        resources = task['secrets']['secretsmanager'].map {|k,v| v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:#{v}-*") : v }
+        secrets.push *task['secrets']['secretsmanager'].map {|k,v| { Name: k, ValueFrom: v.is_a?(String) && ! v.start_with?('arn') ? v : FnSub("arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:#{v}") }}
+        resources = task['secrets']['secretsmanager'].map {|k,v| v.is_a?(String) && v.start_with?('arn') ? "#{v}*" : FnSub("arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:#{v}*") }
         secrets_policy['secretsmanager'] = {
           'action' => 'secretsmanager:GetSecretValue',
           'resource' => resources
