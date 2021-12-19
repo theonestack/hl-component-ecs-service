@@ -205,6 +205,18 @@ task_definition:
         DB_PASSWORD: /db/${EnvironmentName}/password
 ```
 
+Not required, but you can also specify a secrets policy to be attached to the _execution_ role, so ECS can retrieve it. If not specified, the secret above is added, but if you want to add a wildcard, you can do so with:
+```yaml
+  secrets_policy:
+    envNameHere:
+      action:
+        - secretsmanager:GetSecretValue
+        - kms:*
+      resource:
+        - Fn::Sub: arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${EnvironmentName}/sneaky/allthesecrets*
+
+```
+
 #### ulimits
 
 ```yaml

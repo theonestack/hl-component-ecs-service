@@ -27,7 +27,7 @@ CloudFormation do
   }
 
   definitions, task_volumes, secrets = Array.new(3){[]}
-  secrets_policy = {}
+  secrets_policy = external_parameters.fetch(:secrets_policy, {})
 
   task_definition = external_parameters.fetch(:task_definition, {})
   task_definition.each do |task_name, task|
@@ -193,8 +193,8 @@ CloudFormation do
     if task.key?('secrets')
       
       if task['secrets'].key?('ssm')
-        secrets.push *task['secrets']['ssm'].map {|k,v| { Name: k, ValueFrom: v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter#{v}") : v }}
-        resources = task['secrets']['ssm'].map {|k,v| v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter#{v}") : v }
+        secrets.push *task['secrets']['ssm'].map {|k,v| { Name: k, ValueFrom: v.is_a?(String) && v.start_with?('arn') ? v : FnSub("arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter#{v}") }}
+        resources = task['secrets']['ssm'].map {|k,v| v.is_a?(String) && v.start_with?('arn') ? v : FnSub("arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter#{v}*") }
         secrets_policy['ssm-secrets'] = {
           'action' => 'ssm:GetParameters',
           'resource' => resources
@@ -202,8 +202,8 @@ CloudFormation do
       end
       
       if task['secrets'].key?('secretsmanager')
-        secrets.push *task['secrets']['secretsmanager'].map {|k,v| { Name: k, ValueFrom: v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:#{v}") : v }}
-        resources = task['secrets']['secretsmanager'].map {|k,v| v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:#{v}-*") : v }
+        secrets.push *task['secrets']['secretsmanager'].map {|k,v| { Name: k, ValueFrom: v.is_a?(String) && ! v.start_with?('arn') ? v : FnSub("arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:#{v}") }}
+        resources = task['secrets']['secretsmanager'].map {|k,v| v.is_a?(String) && v.start_with?('arn') ? "#{v}*" : FnSub("arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:#{v}*") }
         secrets_policy['secretsmanager'] = {
           'action' => 'secretsmanager:GetSecretValue',
           'resource' => resources
