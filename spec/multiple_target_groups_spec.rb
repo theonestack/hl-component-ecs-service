@@ -196,7 +196,7 @@ describe 'compiled component ecs-service' do
       end
       
       it "to have property DesiredCount" do
-          expect(resource["Properties"]["DesiredCount"]).to eq({"Ref"=>"DesiredCount"})
+          expect(resource["Properties"]["DesiredCount"]).to eq({"Fn::If" => ["NoDesiredCount", {"Ref"=>"AWS::NoValue"}, {"Ref"=>"DesiredCount"}]})
       end
       
       it "to have property DeploymentConfiguration" do

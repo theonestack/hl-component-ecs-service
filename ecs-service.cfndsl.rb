@@ -16,6 +16,7 @@ CloudFormation do
   tags << { Key: "EnvironmentType", Value: Ref("EnvironmentType") }
 
   Condition('IsScalingEnabled', FnEquals(Ref('EnableScaling'), 'true'))
+  Condition('NoDesiredCount', FnEquals(Ref('DesiredCount'), '-1'))
 
   log_retention = external_parameters.fetch(:log_retention, 7)
   loggroup_name = external_parameters.fetch(:loggroup_name, Ref('AWS::StackName'))
@@ -494,7 +495,7 @@ CloudFormation do
     end
     Cluster Ref("EcsCluster")
     HealthCheckGracePeriodSeconds health_check_grace_period if !health_check_grace_period.nil?
-    DesiredCount Ref('DesiredCount') if strategy != 'DAEMON'
+    DesiredCount FnIf('NoDesiredCount', Ref('AWS::NoValue'), Ref('DesiredCount')) if strategy != 'DAEMON'
     DeploymentConfiguration ({
         MinimumHealthyPercent: Ref('MinimumHealthyPercent'),
         MaximumPercent: Ref('MaximumPercent')
