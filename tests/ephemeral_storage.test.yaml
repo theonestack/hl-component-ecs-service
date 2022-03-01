@@ -1,0 +1,12 @@
+test_metadata:
+  type: config
+  name: ephemeral_storage
+  description: test seting ephemeral_storage
+
+task_definition:
+  nginx:
+    repo: nginx
+    image: nginx
+    
+ephemeral_storage:
+  SizeInGiB: 50

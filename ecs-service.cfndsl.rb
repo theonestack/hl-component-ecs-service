@@ -70,7 +70,6 @@ CloudFormation do
     task_def.merge!({ StopTimeout: task['stop_timeout'] }) if task.has_key?('stop_timeout')
 
 
-
     if !(task['env_vars'].nil?)
       task['env_vars'].each do |name,value|
         split_value = value.to_s.split(/\${|}/)
@@ -317,6 +316,8 @@ CloudFormation do
     if awsvpc_enabled
         RequiresCompatibilities FnIf('IsFargate', ['FARGATE'], ['EC2'])
     end
+
+    EphemeralStorage external_parameters[:ephemeral_storage] unless external_parameters[:ephemeral_storage].nil?
 
     Tags tags
 
