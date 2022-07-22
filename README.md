@@ -357,6 +357,42 @@ Run a daemon task on all ECS instances in the cluster
 scheduling_strategy: DAEMON
 ```
 
+### Service Discovery / Service Registries
+
+You can configure a service to be added to one or more Service Discovery Namespaces by creating multiple service registries.
+
+#### Highlander file
+
+If you choose to create multiple registries then you will need to create a custom parameter for each Namespace ID with the value set to import the export from the respective Service Discovery stack.
+
+```yaml
+# Single registry
+parameter name: 'NamespaceId', value: FnImportValue(FnSub('${EnvironmentName}-servicediscovery-NamespaceId'))
+# Suggestion for using multiple registries
+parameter name: 'PrivateNamespaceId', value: FnImportValue(FnSub('${EnvironmentName}-servicediscoveryprivate-NamespaceId'))
+parameter name: 'PublicNamespaceId', value: FnImportValue(FnSub('${EnvironmentName}-servicediscoverypublic-NamespaceId'))
+```
+
+#### Config file
+
+The `namespace_id` key is configured to do a FnSub on the value, so you can reference the parameter. The `failure_threshold`, `healthcheck`, `port` and `container_port` keys are optional.
+
+```yaml
+service_discovery_registries:
+  tasknameprivate:
+    namespace_id: ${PrivateNamespaceId}     # If there is only going to be one namespace then this can be changed to ${NamespaceId}
+    name: task_name
+    container_name: container_name
+    container_port: 1433
+    healthcheck: /
+    failure_threshold: 2
+  # Additional namespaces/registries below
+  tasknamepublic:
+    namespace_id: ${PublicNamespaceId}
+    name: task_name
+    container_name: container_name
+    port: 5432
+```
 
 ## Resources
 
