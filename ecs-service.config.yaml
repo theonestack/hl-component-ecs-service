@@ -97,3 +97,12 @@ log_retention: 7
 #       - ssm:GetParameters
 #       - ssm:GetParametersByPath
 #       - ssm:DescribeParameters
+# service_discovery_registries:     # One or more Service Discovery namespaces can be added
+#   apiprivate:
+#     namespace_id: ${PrivateNamespaceId}     # If there is only going to be one namespace then this can be changed to ${NamespaceId}
+#     name: api
+#     container_name: api
+#   apipublic:
+#     namespace_id: ${PublicNamespaceId}
+#     name: api
+#     container_name: api

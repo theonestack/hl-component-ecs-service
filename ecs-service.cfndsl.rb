@@ -456,31 +456,34 @@ CloudFormation do
     }
   end
 
-  registry = {}
+  registries = []
+  unless service_discovery_registries.empty?
+    service_discovery_registries.each do |service_discovery_name, service_discovery|
+      registry = {}
+      ServiceDiscovery_Service("#{service_discovery_name}ServiceRegistry") {
+        NamespaceId FnSub(service_discovery['namespace_id']) if service_discovery.has_key? 'namespace_id'
+        Name service_discovery['name']  if service_discovery.has_key? 'name'
+        DnsConfig({
+          DnsRecords: [{
+            TTL: 60,
+            Type: 'A'
+          }],
+          RoutingPolicy: 'WEIGHTED'
+        })
+        if service_discovery.has_key? 'healthcheck'
+          HealthCheckConfig service_discovery['healthcheck']
+        else
+          HealthCheckCustomConfig ({ FailureThreshold: (service_discovery['failure_threshold'] || 1) })
+        end
+      }
 
-  unless service_discovery.empty?
+      registry[:RegistryArn] = FnGetAtt("#{service_discovery_name}ServiceRegistry", :Arn)
+      registry[:ContainerName] = service_discovery['container_name']
+      registry[:ContainerPort] = service_discovery['container_port'] if service_discovery.has_key? 'container_port'
+      registry[:Port] = service_discovery['port'] if service_discovery.has_key? 'port'
 
-    ServiceDiscovery_Service(:ServiceRegistry) {
-      NamespaceId Ref(:NamespaceId)
-      Name service_discovery['name']  if service_discovery.has_key? 'name'
-      DnsConfig({
-        DnsRecords: [{
-          TTL: 60,
-          Type: 'A'
-        }],
-        RoutingPolicy: 'WEIGHTED'
-      })
-      if service_discovery.has_key? 'healthcheck'
-        HealthCheckConfig service_discovery['healthcheck']
-      else
-        HealthCheckCustomConfig ({ FailureThreshold: (service_discovery['failure_threshold'] || 1) })
-      end
-    }
-
-    registry[:RegistryArn] = FnGetAtt(:ServiceRegistry, :Arn)
-    registry[:ContainerName] = service_discovery['container_name']
-    registry[:ContainerPort] = service_discovery['container_port'] if service_discovery.has_key? 'container_port'
-    registry[:Port] = service_discovery['port'] if service_discovery.has_key? 'port'
+      registries << registry
+    end
   end
 
 
@@ -522,7 +525,7 @@ CloudFormation do
     end
 
     unless registry.empty?
-      ServiceRegistries([registry])
+      ServiceRegistries(registries)
     end
 
     Tags tags if tags.any?
