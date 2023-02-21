@@ -401,10 +401,19 @@ CloudFormation do
             rule_name = "TargetRule#{index}"
           end
           rule_names << rule_name
+
+          actions = []
+          actions << { Type: "forward", Order: 5000, TargetGroupArn: Ref(targetgroup['resource_name']) }
+
+          if targetgroup.has_key?('cognito')
+            if targetgroup['cognito'] == true
+              actions << cognito(self)
+            end
+          end
   
           ElasticLoadBalancingV2_ListenerRule(rule_name) do
             Actions [{ Type: "forward", TargetGroupArn: Ref(targetgroup['resource_name']) }]
-            Conditions listener_conditions
+            Conditions actions
             ListenerArn Ref(targetgroup['listener_resource'])
             Priority rule['priority']
           end
