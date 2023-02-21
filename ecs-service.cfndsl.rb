@@ -412,8 +412,8 @@ CloudFormation do
           end
   
           ElasticLoadBalancingV2_ListenerRule(rule_name) do
-            Actions [{ Type: "forward", TargetGroupArn: Ref(targetgroup['resource_name']) }]
-            Conditions actions
+            Actions actions
+            Conditions listener_conditions
             ListenerArn Ref(targetgroup['listener_resource'])
             Priority rule['priority']
           end
