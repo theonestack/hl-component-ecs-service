@@ -17,6 +17,7 @@ CloudFormation do
 
   Condition('IsScalingEnabled', FnEquals(Ref('EnableScaling'), 'true'))
   Condition('NoDesiredCount', FnEquals(Ref('DesiredCount'), '-1'))
+  Condition(:EnableCognito, FnNot(FnEquals(Ref(:UserPoolClientId), '')))
 
   log_retention = external_parameters.fetch(:log_retention, 7)
   loggroup_name = external_parameters.fetch(:loggroup_name, Ref('AWS::StackName'))
@@ -401,9 +402,12 @@ CloudFormation do
             rule_name = "TargetRule#{index}"
           end
           rule_names << rule_name
+
+          actions = [{ Type: "forward", Order: 5000, TargetGroupArn: Ref(targetgroup['resource_name'])}]
+          actions_with_cognito = actions + [cognito(Ref(:UserPoolId), Ref(:UserPoolClientId), Ref(:UserPoolDomainName))]
   
           ElasticLoadBalancingV2_ListenerRule(rule_name) do
-            Actions [{ Type: "forward", TargetGroupArn: Ref(targetgroup['resource_name']) }]
+            Actions FnIf(:EnableCognito, actions_with_cognito, actions)
             Conditions listener_conditions
             ListenerArn Ref(targetgroup['listener_resource'])
             Priority rule['priority']

@@ -9,6 +9,7 @@ CfhighlanderTemplate do
   end
 
   DependsOn 'lib-iam'
+  DependsOn 'lib-alb'
 
   Description "ecs-service - #{component_name} - #{component_version}"
 
@@ -16,6 +17,9 @@ CfhighlanderTemplate do
     ComponentParam 'EnvironmentName', 'dev', isGlobal: true
     ComponentParam 'EnvironmentType', 'development', allowedValues: ['development','production'], isGlobal: true
     ComponentParam 'EcsCluster'
+    ComponentParam 'UserPoolId', ''
+    ComponentParam 'UserPoolClientId', ''
+    ComponentParam 'UserPoolDomainName', ''
 
     if (defined? targetgroup) || ((defined? network_mode) && (network_mode == "awsvpc"))
       ComponentParam 'VPCId', type: 'AWS::EC2::VPC::Id'

@@ -88,7 +88,7 @@ describe 'compiled component ecs-service' do
       end
       
       it "to have property Actions" do
-          expect(resource["Properties"]["Actions"]).to eq([{"Type"=>"forward", "TargetGroupArn"=>{"Ref"=>"nginxhttpTargetGroup"}}])
+          expect(resource["Properties"]["Actions"]).to eq({"Fn::If"=>["EnableCognito", [{"Type"=>"forward", "Order"=>5000, "TargetGroupArn"=>{"Ref"=>"nginxhttpTargetGroup"}}, {"Type"=>"authenticate-cognito", "Order"=>1, "AuthenticateCognitoConfig"=>{"UserPoolArn"=>{"Ref"=>"UserPoolId"}, "UserPoolClientId"=>{"Ref"=>"UserPoolClientId"}, "UserPoolDomain"=>{"Ref"=>"UserPoolDomainName"}}}], [{"Type"=>"forward", "Order"=>5000, "TargetGroupArn"=>{"Ref"=>"nginxhttpTargetGroup"}}]]})
       end
       
       it "to have property Conditions" do
@@ -146,7 +146,7 @@ describe 'compiled component ecs-service' do
       end
       
       it "to have property Actions" do
-          expect(resource["Properties"]["Actions"]).to eq([{"Type"=>"forward", "TargetGroupArn"=>{"Ref"=>"nginxhttpsTargetGroup"}}])
+          expect(resource["Properties"]["Actions"]).to eq({"Fn::If"=>["EnableCognito", [{"Type"=>"forward", "Order"=>5000, "TargetGroupArn"=>{"Ref"=>"nginxhttpsTargetGroup"}}, {"Type"=>"authenticate-cognito", "Order"=>1, "AuthenticateCognitoConfig"=>{"UserPoolArn"=>{"Ref"=>"UserPoolId"}, "UserPoolClientId"=>{"Ref"=>"UserPoolClientId"}, "UserPoolDomain"=>{"Ref"=>"UserPoolDomainName"}}}], [{"Type"=>"forward", "Order"=>5000, "TargetGroupArn"=>{"Ref"=>"nginxhttpsTargetGroup"}}]]})
       end
       
       it "to have property Conditions" do
@@ -196,7 +196,7 @@ describe 'compiled component ecs-service' do
       end
       
       it "to have property DesiredCount" do
-          expect(resource["Properties"]["DesiredCount"]).to eq({"Fn::If" => ["NoDesiredCount", {"Ref"=>"AWS::NoValue"}, {"Ref"=>"DesiredCount"}]})
+          expect(resource["Properties"]["DesiredCount"]).to eq({"Fn::If"=>["NoDesiredCount", {"Ref"=>"AWS::NoValue"}, {"Ref"=>"DesiredCount"}]})
       end
       
       it "to have property DeploymentConfiguration" do
