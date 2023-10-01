@@ -203,7 +203,7 @@ CloudFormation do
       end
       
       if task['secrets'].key?('secretsmanager')
-        secrets.push *task['secrets']['secretsmanager'].map {|k,v| { Name: k, ValueFrom: v.is_a?(String) && ! v.start_with?('arn') ? v : FnSub("arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:#{v}") }}
+        secrets.push *task['secrets']['secretsmanager'].map {|k,v| { Name: k, ValueFrom: v.is_a?(String) && v.start_with?('arn') ? v : FnSub("arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:#{v}") }}
         resources = task['secrets']['secretsmanager'].map {|k,v| v.is_a?(String) && v.start_with?('arn') ? "#{v}*" : FnSub("arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:#{v}*") }
         secrets_policy['secretsmanager'] = {
           'action' => 'secretsmanager:GetSecretValue',
