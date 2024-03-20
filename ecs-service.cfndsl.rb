@@ -22,6 +22,9 @@ CloudFormation do
   log_retention = external_parameters.fetch(:log_retention, 7)
   loggroup_name = external_parameters.fetch(:loggroup_name, Ref('AWS::StackName'))
 
+  
+  task_role_name = external_parameters.fetch(:task_role_name, nil)
+
 
   Logs_LogGroup('LogGroup') {
     LogGroupName loggroup_name
@@ -271,6 +274,7 @@ CloudFormation do
       AssumeRolePolicyDocument service_assume_role_policy(['ecs-tasks','ssm'])
       Path '/'
       Policies(iam_role_policies(iam_policies))
+      RoleName task_role_name unless task_role_name.nil?
     end
 
     IAM_Role('ExecutionRole') do
