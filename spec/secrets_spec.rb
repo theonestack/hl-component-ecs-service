@@ -46,7 +46,7 @@ describe 'compiled component ecs-service' do
       end
       
       it "to have property Policies" do
-          expect(resource["Properties"]["Policies"]).to eq([{"PolicyName"=>"s3", "PolicyDocument"=>{"Statement"=>[{"Sid"=>"s3", "Action"=>["s3:GetObject"], "Resource"=>["arn:aws:s3::::bucket/*"], "Effect"=>"Allow"}]}}])
+          expect(resource["Properties"]["Policies"]).to eq([{"PolicyName"=>"s3", "PolicyDocument"=>{"Version"=>"2012-10-17", "Statement"=>[{"Sid"=>"s3", "Action"=>["s3:GetObject"], "Resource"=>["arn:aws:s3::::bucket/*"], "Effect"=>"Allow"}]}}])
       end
       
     end
@@ -71,7 +71,7 @@ describe 'compiled component ecs-service' do
       end
       
       it "to have property Policies" do
-          expect(resource["Properties"]["Policies"]).to eq([{"PolicyName"=>"ssm-secrets", "PolicyDocument"=>{"Statement"=>[{"Sid"=>"ssmsecrets", "Action"=>"ssm:GetParameters", "Resource"=>[{"Fn::Sub"=>"arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/nginx/${EnvironmentName}/api/key*"}, {"Fn::Sub"=>"arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/nginx/${EnvironmentName}/api/secret*"}], "Effect"=>"Allow"}]}}, {"PolicyName"=>"secretsmanager", "PolicyDocument"=>{"Statement"=>[{"Sid"=>"secretsmanager", "Action"=>"secretsmanager:GetSecretValue", "Resource"=>[{"Fn::Sub"=>"arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/dont/use/accesskeys*"}, {"Fn::Sub"=>"arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${EnvironmentName}*"}], "Effect"=>"Allow"}]}}])
+          expect(resource["Properties"]["Policies"]).to eq([{"PolicyName"=>"ssm-secrets", "PolicyDocument"=>{"Version"=>"2012-10-17", "Statement"=>[{"Sid"=>"ssmsecrets", "Action"=>"ssm:GetParameters", "Resource"=>[{"Fn::Sub"=>"arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/nginx/${EnvironmentName}/api/key*"}, {"Fn::Sub"=>"arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/nginx/${EnvironmentName}/api/secret*"}], "Effect"=>"Allow"}]}}, {"PolicyName"=>"secretsmanager", "PolicyDocument"=>{"Version"=>"2012-10-17", "Statement"=>[{"Sid"=>"secretsmanager", "Action"=>"secretsmanager:GetSecretValue", "Resource"=>[{"Fn::Sub"=>"arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/dont/use/accesskeys*"}, {"Fn::Sub"=>"arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${EnvironmentName}*"}], "Effect"=>"Allow"}]}}])
       end
       
     end
