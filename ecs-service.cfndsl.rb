@@ -496,12 +496,14 @@ CloudFormation do
   task_placement_distinct_instance_constraint = external_parameters.fetch(:distinct_instance_constraint, false)
   health_check_grace_period = external_parameters.fetch(:health_check_grace_period, nil)
   placement_strategies = external_parameters.fetch(:placement_strategies, nil)
+  availability_zone_rebalancing = external_parameters.fetch(:availability_zone_rebalancing, nil)
   ECS_Service('Service') do
     DependsOn rule_names if rule_names.any?
     if awsvpc_enabled
         LaunchType FnIf('IsEmptyLaunchType', Ref('AWS::NoValue'), FnIf('IsFargate', 'FARGATE', 'EC2'))
         PlatformVersion Ref('PlatformVersion') if defined?(platform_version)
     end
+    AvailabilityZoneRebalancing availability_zone_rebalancing if !availability_zone_rebalancing.nil?
     Cluster Ref("EcsCluster")
     HealthCheckGracePeriodSeconds health_check_grace_period if !health_check_grace_period.nil?
     DesiredCount FnIf('NoDesiredCount', Ref('AWS::NoValue'), Ref('DesiredCount')) if strategy != 'DAEMON'
