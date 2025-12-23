@@ -1,11 +1,4 @@
 # ecs-service CfHighlander component
-
-Creates the resources required to set up and serve a ECS service
-
-```bash
-kurgan add ecs-service
-```
-
 ## Parameters
 
 | Name | Use | Default | Global | Type | Allowed Values |
@@ -26,9 +19,93 @@ kurgan add ecs-service
 | DisableLaunchType | set to false to disable setting the ECS service property `LaunchType` to specify custom default providers | false | false | string | ['true','false']
 | PlatformVersion | set the fargate platform version | - | false | string
 | NamespaceId | set a service discovery namespace id | - | false | string
+## Outputs/Exports
 
+| Name | Value | Exported |
+| ---- | ----- | -------- |
+| SecurityGroup | Security Group name | true
+| ServiceName | The full generated service name | true
 
-## Configuration
+## Included Components
+
+[lib-ec2](https://github.com/theonestack/hl-component-lib-ec2)
+
+## Example Configuration
+### Highlander
+```
+  Component name: 'app1', template: 'ecs-service', config: app1_conf do
+    parameter name: 'VPCId', value: FnImportValue(FnSub("${EnvironmentName}-vpcv2-VPCId"))
+    parameter name: 'SubnetIds', value: FnImportValue(FnSub("${EnvironmentName}-vpcv2-ComputeSubnets"))
+    parameter name: 'EcsCluster', value: FnImportValue(FnSub("${EnvironmentName}-ecsec2-EcsCluster"))
+    parameter name: 'Listener', value: FnImportValue(FnSub('${EnvironmentName}-alb-httpsListener'))
+    parameter name: 'StackOctet', value: Ref('StackOctet')
+    parameter name: 'NetworkPrefix', value: Ref('NetworkPrefix')
+    parameter name: 'AppVersion', value: Ref('AppVersion')
+    parameter name: 'EnableFargate', value: false
+    parameter name: 'DesiredCount', value: Ref('DesiredCount')
+    parameter name: 'NamespaceId', value: FnImportValue(FnSub('${EnvironmentName}-servicediscovery-NamespaceId'))
+    parameter name: 'EFSFileSystem', value: FnImportValue(FnSub('${EnvironmentName}-efsv2-FileSystem'))
+    parameter name: 'DataAccessPoint', value: FnImportValue(FnSub('${EnvironmentName}-efsv2-DataAccessPoint'))
+    parameter name: 'MinimumHealthyPercent', value: '0'
+    parameter name: 'MaximumPercent', value: '100'
+  end
+```
+
+### ecs-service Configuration
+```
+app1_conf:
+  network_mode: awsvpc
+  loggroup_name: 'project-app1'
+  loggroup_retain: true
+  volumes:
+    - Name:
+        Fn::Sub: ${EnvironmentName}-efs_data
+      EFSVolumeConfiguration:
+        FilesystemId:
+          Ref: EFSFileSystem
+        DataConfig:
+          AccessPointId:
+            Ref: DataAccessPoint
+        TransitEncryption: ENABLED
+  task_definition:
+    app1:
+      memory: 2048
+      repo: 1234567890.dkr.ecr.ap-southeast-2.amazonaws.com
+      image: project-app1
+      tag_param: AppVersion
+      stop_timeout: 120
+      env_vars:
+        APP_ENV:
+          Fn::Sub: ${EnvironmentName}
+        AWS_REGION:
+          Fn::Sub: ${AWS::Region}
+      mounts:
+        - /app1_data:${EnvironmentName}-efs_data
+
+  iam_policies:
+    <<: *policy_defaults
+    ProviderToken:
+      action:
+        - secretsmanager:GetSecretValue
+        - secretsmanager:PutSecretValue
+        - kms:*
+      resource:
+        - arn:aws:secretsmanager:ap-southeast-2:1234567890:secret:dev/project/ProviderToken-b4s32
+
+  securityGroups:
+    app1:
+      - rules:
+          - IpProtocol: tcp
+            FromPort: 9001
+            ToPort: 9001
+        ips:
+          - stack
+
+  service_discovery:
+    name: app1
+    container_name: app1
+```
+## Configuration Options
 
 ### Logging
 
@@ -434,11 +511,23 @@ Creates a security group with defined rules and attaches it to the ECS task if u
 **Type:** AWS::ServiceDiscovery::Service
 
 **Condition:** if `service_discovery` config is defined
+## Cfhighlander Setup
 
+install cfhighlander [gem](https://github.com/theonestack/cfhighlander)
 
-## Outputs
+```bash
+gem install cfhighlander
+```
 
-| Name | Value | Export |
-| ---- | --- | ------- |
-| SecurityGroup | Security group name | ${EnvironmentName}-ecs-service-SecurityGroup
-| ServiceName | ECS service name | ${EnvironmentName}-ecs-service-ServiceName
+or via docker
+
+```bash
+docker pull theonestack/cfhighlander
+```
+## Testing Components
+
+Running the tests
+
+```bash
+cfhighlander cftest ecs-service
+```
